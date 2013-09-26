@@ -11,6 +11,7 @@ from optparse import OptionParser
 import os
 import time
 from pg8000 import DBAPI
+from netutils import SSH
 import pg8000.errors
 
 # A scratch directory on your filesystem
@@ -106,30 +107,10 @@ def parse_args():
   
   return opts
 
-# Run a command on a host through ssh, throwing an exception if ssh fails
-def ssh(host, username, identity_file, command):
-  subprocess.check_call(
-      "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
-      (identity_file, username, host, command), shell=True)
-
-# Copy a file to a given host through scp, throwing an exception if scp fails
-def scp_to(host, identity_file, username, local_file, remote_file):
-  subprocess.check_call(
-      "scp -q -o StrictHostKeyChecking=no -i %s '%s' '%s@%s:%s'" %
-      (identity_file, local_file, username, host, remote_file), shell=True)
-
-# Copy a file to a given host through scp, throwing an exception if scp fails
-def scp_from(host, identity_file, username, remote_file, local_file):
-  subprocess.check_call(
-      "scp -q -o StrictHostKeyChecking=no -i %s '%s@%s:%s' '%s'" %
-      (identity_file, username, host, remote_file, local_file), shell=True)
-
 # Insert AWS credentials into a given XML file on the given remote host
-def add_aws_credentials(remote_host, remote_user, identity_file, 
-                       remote_xml_file, aws_key_id, aws_key):
+def add_aws_credentials(remote_host, remote_xml_file, aws_key_id, aws_key):
   local_xml = os.path.join(LOCAL_TMP_DIR, "temp.xml")
-  scp_from(remote_host, identity_file, remote_user, 
-           remote_xml_file, local_xml)
+  remote_host.scp_from(remote_xml_file, local_xml)
   lines = open(local_xml).readlines()
   # Manual XML munging... this makes me cry a little bit
   lines = filter(lambda x: "configuration" not in x and "xml" not in x 
@@ -146,7 +127,7 @@ def add_aws_credentials(remote_host, remote_user, identity_file,
   for l in lines:
     print >> out, l
   out.close()
-  scp_to(remote_host, identity_file, remote_user, local_xml, remote_xml_file)
+  remote_host.scp_to(local_xml, remote_xml_file)
 
 def prepare_shark_dataset(opts):
   def ssh_shark(command):
@@ -218,8 +199,7 @@ def prepare_shark_dataset(opts):
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
 def prepare_impala_dataset(opts):
-  def ssh_impala(command): 
-    ssh(opts.impala_host, "ubuntu", opts.impala_identity_file, command)
+  ssh_impala = SSH(opts.impala_host, "ubuntu", opts.impala_identity_file)
 
   if not opts.skip_s3_import:
     print "=== IMPORTING BENCHMARK FROM S3 ==="
@@ -231,10 +211,10 @@ def prepare_impala_dataset(opts):
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/hdfs-site.xml") 
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/core-site.xml") 
 
-    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
-        "/etc/hadoop/conf/hdfs-site.xml", opts.aws_key_id, opts.aws_key)
-    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
-        "/etc/hadoop/conf/core-site.xml", opts.aws_key_id, opts.aws_key)
+    add_aws_credentials(ssh_impala, "/etc/hadoop/conf/hdfs-site.xml",
+                        opts.aws_key_id, opts.aws_key)
+    add_aws_credentials(ssh_impala, "/etc/hadoop/conf/core-site.xml",
+                        opts.aws_key_id, opts.aws_key)
   
     ssh_impala( 
       "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
