@@ -171,8 +171,9 @@ def parse_args():
       help="Number of trials to run for this query")
 
 
-  parser.add_option("-q", "--query-num", default="1",
-      help="Which query to run in benchmark")
+  parser.add_option("-q", "--query-num", default="1a",
+                    help="Which query to run in benchmark: " \
+                    "%s" % ", ".join(QUERY_MAP.keys()))
 
   (opts, args) = parser.parse_args()
 
