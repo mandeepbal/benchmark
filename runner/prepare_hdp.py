@@ -290,24 +290,23 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
 def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key):
-  master = master_nodes[0].public_dns_name
-  ambari = ambari_nodes[0].public_dns_name
+  master = master_nodes[0]
+  ambari = ambari_nodes[0]
 
-  print "Ambari: %s" % ambari
+  print "Ambari: %s" % ambari.public_dns_name
 
   opts.user = "ec2-user"
 
-  print opts
   if deploy_ssh_key:
     print "Copying SSH key %s to master..." % opts.identity_file
-    ssh(master, opts, 'mkdir -p ~/.ssh')
-    scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
-    ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
+    ssh(master.public_dns_name, opts, 'mkdir -p ~/.ssh')
+    scp(master.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
+    ssh(master.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
 
     print "Copying SSH key %s to ambari..." % opts.identity_file
-    ssh(ambari, opts, 'mkdir -p ~/.ssh')
-    scp(ambari, opts, opts.identity_file, '~/.ssh/id_rsa')
-    ssh(ambari, opts, 'chmod 600 ~/.ssh/id_rsa')
+    ssh(ambari.public_dns_name, opts, 'mkdir -p ~/.ssh')
+    scp(ambari.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
+    ssh(ambari.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
 
   for node in master_nodes + slave_nodes + ambari_nodes:
     ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
@@ -315,6 +314,12 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
 
   opts.user = "root"
 
+  configure_node(master, opts, "hdpmaster1")
+  configure_node(ambari, opts, "ambarimaster")
+  for i, node in enumerate(slave_nodes):
+    configure_node(node, opts, "hdpslave%i" % i)
+
+  generate_hosts(master_nodes + ambari_nodes + slave_nodes, opts)
   setup_ambari_master(ambari, opts)
 
   modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
@@ -338,6 +343,30 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   print "Done!"
 
 
+def configure_node(node, opts, name):
+  cmd = """
+        sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux;
+        sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
+        chkconfig iptables off
+        chkconfig ip6tables off
+        """ % name
+
+  node.assigned_name = name
+  ssh(node.public_dns_name, opts, cmd)
+
+def generate_hosts(nodes, opts):
+  tmp_hosts_file = tempfile.NamedTemporaryFile(delete=False)
+  print >> tmp_hosts_file, "127.0.0.1 localhost.localdomain localhost"
+  print >> tmp_hosts_file, "::1 localhost6.localdomain6 localhost6"
+
+  for node in nodes:
+    print >> tmp_hosts_file, "%s %s.hdp.hadoop %s" % (node.ip_address, node.assigned_name, node.assigned_name)
+  tmp_hosts_file.close()
+
+  print open(tmp_hosts_file.name).readlines()
+  for node in nodes:
+    scp(node.public_dns_name, opts, tmp_hosts_file.name, "/etc/hosts")
+
 def setup_ambari_master(ambari, opts):
   cmd = """
         wget http://public-repo-1.hortonworks.com/ambari/centos6/1.x/GA/ambari.repo;
@@ -349,7 +378,7 @@ def setup_ambari_master(ambari, opts):
         ambari-server start;
         """
   cmd = cmd.replace('\n', ' ')
-  ssh(ambari, opts, cmd)
+  ssh(ambari.public_dns_name, opts, cmd)
 
 def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
