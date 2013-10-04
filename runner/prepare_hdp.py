@@ -159,6 +159,8 @@ def launch_cluster(conn, opts, cluster_name):
   print "Setting up security groups..."
   master_group = get_or_make_group(conn, cluster_name + "-master")
   slave_group = get_or_make_group(conn, cluster_name + "-slaves")
+  ambari_group = get_or_make_group(conn, cluster_name + "-ambari")
+
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
@@ -169,70 +171,92 @@ def launch_cluster(conn, opts, cluster_name):
     slave_group.authorize(src_group=slave_group)
     # TODO: Currently Group is completely open
     slave_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
+  if ambari_group.rules == []: # Group was just now created
+    ambari_group.authorize(src_group=master_group)
+    ambari_group.authorize(src_group=slave_group)
+    # TODO: Currently Group is completely open
+    ambari_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
 
   # Check if instances are already running in our groups
-  active_nodes = get_existing_cluster(conn, opts, cluster_name,
-                                      die_on_error=False)
-  if any(active_nodes):
-    print >> stderr, ("ERROR: There are already instances running in " +
-        "group %s or %s" % (master_group.name, slave_group.name))
-    sys.exit(1)
+  if opts.resume:
+    return get_existing_cluster(conn, opts, cluster_name, die_on_error=False)
+  else:
+    active_nodes = get_existing_cluster(conn, opts, cluster_name, die_on_error=False)
+    if any(active_nodes):
+      print >> stderr, ("ERROR: There are already instances running in " +
+          "group %s or %s" % (master_group.name, slave_group.name))
+      sys.exit(1)
 
-  print "Launching instances..."
+    print "Launching instances..."
 
-  try:
-    image = conn.get_all_images(image_ids=[opts.ami])[0]
-  except:
-    print >> stderr, "Could not find AMI " + opts.ami
-    sys.exit(1)
+    try:
+      image = conn.get_all_images(image_ids=[opts.ami])[0]
+    except:
+      print >> stderr, "Could not find AMI " + opts.ami
+      sys.exit(1)
 
-  # Create block device mapping so that we can add an EBS volume if asked to
-  block_map = BlockDeviceMapping()
-  if opts.ebs_vol_size > 0:
-    device = EBSBlockDeviceType()
-    device.size = opts.ebs_vol_size
-    device.delete_on_termination = True
-    block_map["/dev/sdv"] = device
+    # Create block device mapping so that we can add an EBS volume if asked to
+    block_map = BlockDeviceMapping()
+    if opts.ebs_vol_size > 0:
+      device = EBSBlockDeviceType()
+      device.size = opts.ebs_vol_size
+      device.delete_on_termination = True
+      block_map["/dev/sdv"] = device
 
-  # Launch slaves
-  # Launch non-spot instances
-  zones = get_zones(conn, opts)
-  num_zones = len(zones)
-  i = 0
-  slave_nodes = []
-  for zone in zones:
-    num_slaves_this_zone = get_partition(opts.slaves, num_zones, i)
-    if num_slaves_this_zone > 0:
-      slave_res = image.run(key_name = opts.key_pair,
-                            security_groups = [slave_group],
-                            instance_type = opts.instance_type,
-                            placement = zone,
-                            min_count = num_slaves_this_zone,
-                            max_count = num_slaves_this_zone,
-                            block_device_map = block_map)
-      slave_nodes += slave_res.instances
-      print "Launched %d slaves in %s, regid = %s" % (num_slaves_this_zone,
-                                                      zone, slave_res.id)
-    i += 1
+    # Launch slaves
+    # Launch non-spot instances
+    zones = get_zones(conn, opts)
+    num_zones = len(zones)
+    i = 0
+    slave_nodes = []
+    for zone in zones:
+      num_slaves_this_zone = get_partition(opts.slaves, num_zones, i)
+      if num_slaves_this_zone > 0:
+        slave_res = image.run(key_name = opts.key_pair,
+                              security_groups = [slave_group],
+                              instance_type = opts.instance_type,
+                              placement = zone,
+                              min_count = num_slaves_this_zone,
+                              max_count = num_slaves_this_zone,
+                              block_device_map = block_map)
+        slave_nodes += slave_res.instances
+        print "Launched %d slaves in %s, regid = %s" % (num_slaves_this_zone,
+                                                        zone, slave_res.id)
+      i += 1
 
-  # Launch masters
-  master_type = opts.master_instance_type
-  if master_type == "":
-    master_type = opts.instance_type
-  if opts.zone == 'all':
-    opts.zone = random.choice(conn.get_all_zones()).name
-  master_res = image.run(key_name = opts.key_pair,
-                         security_groups = [master_group],
-                         instance_type = master_type,
-                         placement = opts.zone,
-                         min_count = 1,
-                         max_count = 1,
-                         block_device_map = block_map)
-  master_nodes = master_res.instances
-  print "Launched master in %s, regid = %s" % (zone, master_res.id)
+    # Launch masters
+    master_type = opts.master_instance_type
+    if master_type == "":
+      master_type = opts.instance_type
+    if opts.zone == 'all':
+      opts.zone = random.choice(conn.get_all_zones()).name
+    master_res = image.run(key_name = opts.key_pair,
+                          security_groups = [master_group],
+                          instance_type = master_type,
+                          placement = opts.zone,
+                          min_count = 1,
+                          max_count = 1,
+                          block_device_map = block_map)
+    master_nodes = master_res.instances
+    print "Launched master in %s, regid = %s" % (zone, master_res.id)
 
-  # Return all the instances
-  return (master_nodes, slave_nodes)
+    ambari_type = opts.master_instance_type
+    if ambari_type == "":
+      ambari_type = opts.instance_type
+    if opts.zone == 'all':
+      opts.zone = random.choice(conn.get_all_zones()).name
+    ambari_res = image.run(key_name = opts.key_pair,
+                          security_groups = [ambari_group],
+                          instance_type = ambari_type,
+                          placement = opts.zone,
+                          min_count = 1,
+                          max_count = 1,
+                          block_device_map = block_map)
+    ambari_nodes = ambari_res.instances
+    print "Launched ambari in %s, regid = %s" % (zone, ambari_res.id)
+
+    # Return all the instances
+    return (master_nodes, slave_nodes, ambari_nodes)
 
 
 # Get the EC2 instances in an existing cluster if available.
@@ -242,6 +266,7 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
   reservations = conn.get_all_instances()
   master_nodes = []
   slave_nodes = []
+  ambari_nodes = []
   for res in reservations:
     active = [i for i in res.instances if is_active(i)]
     if len(active) > 0:
@@ -250,30 +275,47 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
         master_nodes += res.instances
       elif group_names == [cluster_name + "-slaves"]:
         slave_nodes += res.instances
-  if any((master_nodes, slave_nodes)):
-    print ("Found %d master(s), %d slaves" %
-           (len(master_nodes), len(slave_nodes)))
-  if (master_nodes != [] and slave_nodes != []) or not die_on_error:
-    return (master_nodes, slave_nodes)
+      elif group_names == [cluster_name + "-ambari"]:
+        ambari_nodes += res.instances
+  if any((master_nodes, slave_nodes, ambari_nodes)):
+    print ("Found %d master(s), %d slaves, %d ambari" %
+           (len(master_nodes), len(slave_nodes), len(ambari_nodes)))
+  if (master_nodes != [] and slave_nodes != [] and ambari_nodes != []) or not die_on_error:
+    return (master_nodes, slave_nodes, ambari_nodes)
   else:
-    if master_nodes == [] and slave_nodes != []:
-      print "ERROR: Could not find master in group " + cluster_name + "-master"
-    elif master_nodes != [] and slave_nodes == []:
-      print "ERROR: Could not find slaves in group " + cluster_name + "-slaves"
-    else:
-      print "ERROR: Could not find any existing cluster"
+    print "ERROR: Could not find any existing cluster"
     sys.exit(1)
 
 
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
-def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
+def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key):
   master = master_nodes[0].public_dns_name
+  ambari = ambari_nodes[0].public_dns_name
+
+  print "Ambari: %s" % ambari
+
+  opts.user = "ec2-user"
+
+  print opts
   if deploy_ssh_key:
     print "Copying SSH key %s to master..." % opts.identity_file
     ssh(master, opts, 'mkdir -p ~/.ssh')
     scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
+
+    print "Copying SSH key %s to ambari..." % opts.identity_file
+    ssh(ambari, opts, 'mkdir -p ~/.ssh')
+    scp(ambari, opts, opts.identity_file, '~/.ssh/id_rsa')
+    ssh(ambari, opts, 'chmod 600 ~/.ssh/id_rsa')
+
+  for node in master_nodes + slave_nodes + ambari_nodes:
+    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
+    ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
+
+  opts.user = "root"
+
+  setup_ambari_master(ambari, opts)
 
   modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
              'mapreduce', 'spark-standalone']
@@ -295,10 +337,19 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
   setup_spark_cluster(master, opts)
   print "Done!"
 
-def setup_standalone_cluster(master, slave_nodes, opts):
-  slave_ips = '\n'.join([i.public_dns_name for i in slave_nodes])
-  ssh(master, opts, "echo \"%s\" > spark/conf/slaves" % (slave_ips))
-  ssh(master, opts, "/root/spark/bin/start-all.sh")
+
+def setup_ambari_master(ambari, opts):
+  cmd = """
+        wget http://public-repo-1.hortonworks.com/ambari/centos6/1.x/GA/ambari.repo;
+        cp ambari.repo /etc/yum.repos.d;
+        yum -y install epel-release;
+        yum -y repolist;
+        yum -y install ambari-server;
+        ambari-server setup;
+        ambari-server start;
+        """
+  cmd = cmd.replace('\n', ' ')
+  ssh(ambari, opts, cmd)
 
 def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
@@ -310,11 +361,12 @@ def setup_spark_cluster(master, opts):
 
 
 # Wait for a whole cluster (masters, slaves and ZooKeeper) to start up
-def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes):
+def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes, ambari_nodes):
   print "Waiting for instances to start up..."
   time.sleep(5)
   wait_for_instances(conn, master_nodes)
   wait_for_instances(conn, slave_nodes)
+  wait_for_instances(conn, ambari_nodes)
   print "Waiting %d more seconds..." % wait_secs
   time.sleep(wait_secs)
 
@@ -432,12 +484,13 @@ def scp(host, opts, local_file, dest_file):
 # Run a command on a host through ssh, retrying up to two times
 # and then throwing an exception if ssh continues to fail.
 def ssh(host, opts, command):
+  cmd = "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (opts.identity_file, opts.user, host, command)
+  print cmd
   tries = 0
   while True:
     try:
       return subprocess.check_call(
-        "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
-        (opts.identity_file, opts.user, host, command), shell=True)
+        cmd, shell=True)
     except subprocess.CalledProcessError as e:
       if (tries > 2):
         raise e
@@ -478,10 +531,9 @@ def main():
   if opts.zone == "":
     opts.zone = random.choice(conn.get_all_zones()).name
 
-  (master_nodes, slave_nodes) = launch_cluster(conn, opts, cluster_name)
-  exit(0)
-  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes)
-  setup_cluster(conn, master_nodes, slave_nodes, opts, True)
+  (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, opts, cluster_name)
+  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
+  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, True)
 
 if __name__ == "__main__":
   logging.basicConfig()
