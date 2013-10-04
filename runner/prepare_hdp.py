@@ -347,9 +347,10 @@ def configure_node(node, opts, name):
   cmd = """
         sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux;
         sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
-        chkconfig iptables off
-        chkconfig ip6tables off
-        """ % name
+        chkconfig iptables off;
+        chkconfig ip6tables off;
+        hostname %s.hdp.hadoop;
+        """ % (name, name)
 
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
