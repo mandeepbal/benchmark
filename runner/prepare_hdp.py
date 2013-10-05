@@ -319,8 +319,10 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   for i, node in enumerate(slave_nodes):
     configure_node(node, opts, "hdpslave%i" % i)
 
-  generate_hosts(master_nodes + ambari_nodes + slave_nodes, opts)
+  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
+
   setup_ambari_master(ambari, opts)
+  generate_hosts_and_key(master_nodes + ambari_nodes + slave_nodes, opts)
 
   modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
              'mapreduce', 'spark-standalone']
@@ -349,13 +351,13 @@ def configure_node(node, opts, name):
         sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
         chkconfig iptables off;
         chkconfig ip6tables off;
-        hostname %s.hdp.hadoop;
+        shutdown -r now;
         """ % (name, name)
 
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
 
-def generate_hosts(nodes, opts):
+def generate_hosts_and_key(nodes, opts):
   tmp_hosts_file = tempfile.NamedTemporaryFile(delete=False)
   print >> tmp_hosts_file, "127.0.0.1 localhost.localdomain localhost"
   print >> tmp_hosts_file, "::1 localhost6.localdomain6 localhost6"
@@ -367,6 +369,10 @@ def generate_hosts(nodes, opts):
   print open(tmp_hosts_file.name).readlines()
   for node in nodes:
     scp(node.public_dns_name, opts, tmp_hosts_file.name, "/etc/hosts")
+    scp(node.public_dns_name, opts, "ambari.pub", "/root/.ssh/ambari.pub")
+    ssh(node.public_dns_name, opts, "cat /root/.ssh/ambari.pub >> /root/.ssh/authorized_keys")
+    ssh(node.public_dns_name, opts, "hostname %s.hdp.hadoop" % node.assigned_name)
+    ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
 
 def setup_ambari_master(ambari, opts):
   cmd = """
@@ -377,9 +383,11 @@ def setup_ambari_master(ambari, opts):
         yum -y install ambari-server;
         ambari-server setup;
         ambari-server start;
+        ssh-keygen -t rsa;
         """
   cmd = cmd.replace('\n', ' ')
   ssh(ambari.public_dns_name, opts, cmd)
+  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa.pub", "ambari.pub")
 
 def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
@@ -510,6 +518,10 @@ def scp(host, opts, local_file, dest_file):
       "scp -q -o StrictHostKeyChecking=no -i %s '%s' '%s@%s:%s'" %
       (opts.identity_file, local_file, opts.user, host, dest_file), shell=True)
 
+def scp_download(host, opts, remote_file, local_file):
+  subprocess.check_call(
+      "scp -q -o StrictHostKeyChecking=no -i %s '%s@%s:%s' '%s'" %
+      (opts.identity_file, opts.user, host, remote_file, local_file), shell=True)
 
 # Run a command on a host through ssh, retrying up to two times
 # and then throwing an exception if ssh continues to fail.
