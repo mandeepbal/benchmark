@@ -164,16 +164,19 @@ def launch_cluster(conn, opts, cluster_name):
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
+    master_group.authorize(src_group=ambari_group)
     # TODO: Currently Group is completely open
     master_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
   if slave_group.rules == []: # Group was just now created
     slave_group.authorize(src_group=master_group)
     slave_group.authorize(src_group=slave_group)
+    slave_group.authorize(src_group=ambari_group)
     # TODO: Currently Group is completely open
     slave_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
   if ambari_group.rules == []: # Group was just now created
     ambari_group.authorize(src_group=master_group)
     ambari_group.authorize(src_group=slave_group)
+    ambari_group.authorize(src_group=ambari_group)
     # TODO: Currently Group is completely open
     ambari_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
 
@@ -319,7 +322,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   for i, node in enumerate(slave_nodes):
     configure_node(node, opts, "hdpslave%i" % i)
 
-  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
+  wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
   setup_ambari_master(ambari, opts)
   generate_hosts_and_key(master_nodes + ambari_nodes + slave_nodes, opts)
@@ -352,7 +355,7 @@ def configure_node(node, opts, name):
         chkconfig iptables off;
         chkconfig ip6tables off;
         shutdown -r now;
-        """ % (name, name)
+        """ % name
 
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
@@ -383,6 +386,7 @@ def setup_ambari_master(ambari, opts):
         yum -y install ambari-server;
         ambari-server setup;
         ambari-server start;
+        ambari-server status;
         ssh-keygen -t rsa;
         """
   cmd = cmd.replace('\n', ' ')
