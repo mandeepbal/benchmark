@@ -159,26 +159,17 @@ def launch_cluster(conn, opts, cluster_name):
   print "Setting up security groups..."
   master_group = get_or_make_group(conn, cluster_name + "-master")
   slave_group = get_or_make_group(conn, cluster_name + "-slaves")
-  ambari_group = get_or_make_group(conn, cluster_name + "-ambari")
 
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
-    master_group.authorize(src_group=ambari_group)
     # TODO: Currently Group is completely open
     master_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
   if slave_group.rules == []: # Group was just now created
     slave_group.authorize(src_group=master_group)
     slave_group.authorize(src_group=slave_group)
-    slave_group.authorize(src_group=ambari_group)
     # TODO: Currently Group is completely open
     slave_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
-  if ambari_group.rules == []: # Group was just now created
-    ambari_group.authorize(src_group=master_group)
-    ambari_group.authorize(src_group=slave_group)
-    ambari_group.authorize(src_group=ambari_group)
-    # TODO: Currently Group is completely open
-    ambari_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
 
   # Check if instances are already running in our groups
   if opts.resume:
@@ -243,23 +234,8 @@ def launch_cluster(conn, opts, cluster_name):
     master_nodes = master_res.instances
     print "Launched master in %s, regid = %s" % (zone, master_res.id)
 
-    ambari_type = opts.master_instance_type
-    if ambari_type == "":
-      ambari_type = opts.instance_type
-    if opts.zone == 'all':
-      opts.zone = random.choice(conn.get_all_zones()).name
-    ambari_res = image.run(key_name = opts.key_pair,
-                          security_groups = [ambari_group],
-                          instance_type = ambari_type,
-                          placement = opts.zone,
-                          min_count = 1,
-                          max_count = 1,
-                          block_device_map = block_map)
-    ambari_nodes = ambari_res.instances
-    print "Launched ambari in %s, regid = %s" % (zone, ambari_res.id)
-
     # Return all the instances
-    return (master_nodes, slave_nodes, ambari_nodes)
+    return (master_nodes, slave_nodes)
 
 
 # Get the EC2 instances in an existing cluster if available.
@@ -269,7 +245,6 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
   reservations = conn.get_all_instances()
   master_nodes = []
   slave_nodes = []
-  ambari_nodes = []
   for res in reservations:
     active = [i for i in res.instances if is_active(i)]
     if len(active) > 0:
@@ -278,13 +253,11 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
         master_nodes += res.instances
       elif group_names == [cluster_name + "-slaves"]:
         slave_nodes += res.instances
-      elif group_names == [cluster_name + "-ambari"]:
-        ambari_nodes += res.instances
-  if any((master_nodes, slave_nodes, ambari_nodes)):
-    print ("Found %d master(s), %d slaves, %d ambari" %
-           (len(master_nodes), len(slave_nodes), len(ambari_nodes)))
-  if (master_nodes != [] and slave_nodes != [] and ambari_nodes != []) or not die_on_error:
-    return (master_nodes, slave_nodes, ambari_nodes)
+  if any((master_nodes, slave_nodes)):
+    print ("Found %d master(s), %d slaves" %
+           (len(master_nodes), len(slave_nodes)))
+  if (master_nodes != [] and slave_nodes != []) or not die_on_error:
+    return (master_nodes, slave_nodes)
   else:
     print "ERROR: Could not find any existing cluster"
     sys.exit(1)
@@ -292,11 +265,10 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
-def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key):
+def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
   master = master_nodes[0]
-  ambari = ambari_nodes[0]
 
-  print "Ambari: %s" % ambari.public_dns_name
+  print "Master: %s" % master.public_dns_name
 
   opts.user = "ec2-user"
 
@@ -306,26 +278,20 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
     scp(master.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-    print "Copying SSH key %s to ambari..." % opts.identity_file
-    ssh(ambari.public_dns_name, opts, 'mkdir -p ~/.ssh')
-    scp(ambari.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
-    ssh(ambari.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
-
-  for node in master_nodes + slave_nodes + ambari_nodes:
+  for node in master_nodes + slave_nodes:
     ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
     ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
 
   opts.user = "root"
 
   configure_node(master, opts, "hdpmaster1")
-  configure_node(ambari, opts, "ambarimaster")
   for i, node in enumerate(slave_nodes):
     configure_node(node, opts, "hdpslave%i" % i)
 
-  wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
+  wait_for_cluster(conn, 90, master_nodes, slave_nodes)
 
-  setup_ambari_master(ambari, opts)
-  generate_hosts_and_key(master_nodes + ambari_nodes + slave_nodes, opts)
+  setup_master(master, opts)
+  generate_hosts_and_key(master_nodes + slave_nodes, opts)
 
   modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
              'mapreduce', 'spark-standalone']
@@ -350,13 +316,23 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
 
 def configure_node(node, opts, name):
   cmd = """
-        sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux;
-        sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
-        chkconfig iptables off;
-        chkconfig ip6tables off;
-        shutdown -r now;
+        sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux
+        sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network
+        wget -nv http://public-repo-1.hortonworks.com/HDP/centos6/1.x/GA/hdp.repo -O /etc/yum.repos.d/hdp.repo
+        wget -nv http://public-repo-1.hortonworks.com/ambari/centos6/1.x/updates/1.2.5.17/ambari.repo -O /etc/yum.repos.d/ambari.repo
+        wget https://mrplus.googlecode.com/files/jdk-6u31-linux-x64.bin
+        mkdir /usr/jdk1.6.0_31
+        cd /usr/jdk1.6.0_31
+        chmod u+x jdk-6u31-linux-x64.bin
+        ./jdk-6u31-linux-x64.bin
+        mkdir /usr/java
+        ln -s /usr/jdk1.6.0_31/jdk1.6.0_31 /usr/java/default
+        ln -s /usr/java/default/bin/java /usr/bin/java
+        export JAVA_HOME=/usr/java/default
+        export PATH=$JAVA_HOME/bin:$PATH
         """ % name
 
+  cmd = cmd.replace('\n', ' ;')
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
 
@@ -372,27 +348,24 @@ def generate_hosts_and_key(nodes, opts):
   print open(tmp_hosts_file.name).readlines()
   for node in nodes:
     scp(node.public_dns_name, opts, tmp_hosts_file.name, "/etc/hosts")
-    scp(node.public_dns_name, opts, "ambari.pub", "/root/.ssh/ambari.pub")
-    ssh(node.public_dns_name, opts, "cat /root/.ssh/ambari.pub >> /root/.ssh/authorized_keys")
     ssh(node.public_dns_name, opts, "hostname %s.hdp.hadoop" % node.assigned_name)
     ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
 
-def setup_ambari_master(ambari, opts):
+def setup_master(master, opts):
   cmd = """
-        wget http://public-repo-1.hortonworks.com/ambari/centos6/1.x/GA/ambari.repo;
-        cp ambari.repo /etc/yum.repos.d;
-        yum -y install epel-release;
-        yum -y repolist;
-        yum -y install ambari-server;
-        ambari-server setup;
-        ambari-server start;
-        ambari-server status;
-        ssh-keygen -t rsa;
+        yum install postgresql-server
+        /etc/init.d/postgresql start
+        /etc/init.d/postgresql initdb
+        echo "listen_addresses = '*'" | sudo tee -a /var/lib/pgsql/data/postgresql.conf
+        echo "port = 5432" | sudo tee -a /var/lib/pgsql/data/postgresql.conf
+        echo "host all all 0.0.0.0/0 trust" | sudo tee -a /var/lib/pgsql/data/pg_hba.conf
+        echo "standard_conforming_strings = off" | sudo tee -a /var/lib/pgsql/data/postgresql.conf
+        echo "CREATE DATABASE dev;" | psql -U postgres
+        echo "CREATE USER root WITH PASSWORD 'Test1234';" | psql -U postgres
+        echo "GRANT ALL PRIVILEGES ON DATABASE dev TO root;" | psql -U postgres
         """
-  cmd = cmd.replace('\n', ' ')
-  ssh(ambari.public_dns_name, opts, cmd)
-  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa.pub", "ambari.pub")
-  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa", "ambari")
+  cmd = cmd.replace('\n', ' ;')
+  ssh(master.public_dns_name, opts, cmd)
 
 def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
@@ -404,12 +377,11 @@ def setup_spark_cluster(master, opts):
 
 
 # Wait for a whole cluster (masters, slaves and ZooKeeper) to start up
-def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes, ambari_nodes):
+def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes):
   print "Waiting for instances to start up..."
   time.sleep(5)
   wait_for_instances(conn, master_nodes)
   wait_for_instances(conn, slave_nodes)
-  wait_for_instances(conn, ambari_nodes)
   print "Waiting %d more seconds..." % wait_secs
   time.sleep(wait_secs)
 
@@ -578,9 +550,9 @@ def main():
   if opts.zone == "":
     opts.zone = random.choice(conn.get_all_zones()).name
 
-  (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, opts, cluster_name)
-  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
-  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, True)
+  (master_nodes, slave_nodes) = launch_cluster(conn, opts, cluster_name)
+  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes)
+  setup_cluster(conn, master_nodes, slave_nodes, opts, True)
 
 if __name__ == "__main__":
   logging.basicConfig()
