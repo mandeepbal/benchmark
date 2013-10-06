@@ -392,6 +392,7 @@ def setup_ambari_master(ambari, opts):
   cmd = cmd.replace('\n', ' ')
   ssh(ambari.public_dns_name, opts, cmd)
   scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa.pub", "ambari.pub")
+  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa", "ambari")
 
 def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
