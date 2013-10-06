@@ -63,7 +63,7 @@ def parse_args():
            "slaves across multiple (an additional $0.01/Gb for bandwidth" +
            "between zones applies)")
   parser.add_option("-a", "--ami", help="Amazon Machine Image ID to use",
-                    default="ami-a25415cb")
+                    default="ami-41642728")
   parser.add_option("-v", "--spark-version", default="0.8.0",
       help="Version of Spark to use: 'X.Y.Z' or a specific git hash")
   parser.add_option("--spark-git-repo", 
@@ -349,14 +349,17 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
 
 
 def configure_node(node, opts, name):
+  replace = """echo "SELINUX=disabled" >> /etc/selinux/config"""
   cmd = """
-        sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux;
+        sed -e 's/SELINUX=enforcing//g' /etc/selinux/config > /etc/selinux/config;
+        echo "SELINUX=disabled" >> /etc/selinux/config;
         sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
         chkconfig iptables off;
         chkconfig ip6tables off;
         shutdown -r now;
         """ % name
 
+  cmd = cmd.replace('\n', ' ')
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
 
