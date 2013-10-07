@@ -332,7 +332,6 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
 
 
 def configure_node(node, opts, name):
-  replace = """echo "SELINUX=disabled" >> /etc/selinux/config"""
   cmd = """
         sed -e 's/SELINUX=enforcing//g' /etc/selinux/config > /etc/selinux/config;
         echo "SELINUX=disabled" >> /etc/selinux/config;
