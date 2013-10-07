@@ -293,46 +293,34 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
   setup_master(master, opts)
   generate_hosts_and_key(master_nodes + slave_nodes, opts)
 
-  modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
-             'mapreduce', 'spark-standalone']
-
-  if opts.hadoop_major_version == "1":
-    modules = filter(lambda x: x != "mapreduce", modules)
-
-  if opts.ganglia:
-    modules.append('ganglia')
-
-  # NOTE: We should clone the repository before running deploy_files to
-  # prevent ec2-variables.sh from being overwritten
-  ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/mesos/spark-ec2.git -b v2")
-
-  print "Deploying files to master..."
-  deploy_files(conn, "deploy.generic", opts, master_nodes, slave_nodes, modules)
-
-  print "Running setup on master..."
-  setup_spark_cluster(master, opts)
   print "Done!"
 
 
 def configure_node(node, opts, name):
   cmd = """
-        sed -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux > /etc/sysconfig/selinux
-        sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network
-        wget -nv http://public-repo-1.hortonworks.com/HDP/centos6/1.x/GA/hdp.repo -O /etc/yum.repos.d/hdp.repo
-        wget -nv http://public-repo-1.hortonworks.com/ambari/centos6/1.x/updates/1.2.5.17/ambari.repo -O /etc/yum.repos.d/ambari.repo
-        wget https://mrplus.googlecode.com/files/jdk-6u31-linux-x64.bin
-        mkdir /usr/jdk1.6.0_31
-        cd /usr/jdk1.6.0_31
-        chmod u+x jdk-6u31-linux-x64.bin
-        ./jdk-6u31-linux-x64.bin
-        mkdir /usr/java
-        ln -s /usr/jdk1.6.0_31/jdk1.6.0_31 /usr/java/default
-        ln -s /usr/java/default/bin/java /usr/bin/java
-        export JAVA_HOME=/usr/java/default
-        export PATH=$JAVA_HOME/bin:$PATH
-        """ % name
+        wget -nv http://public-repo-1.hortonworks.com/HDP/suse11/1.x/GA/hdp.repo -O /etc/zypp/repos.d/hdp.repo;
+        wget -nv http://public-repo-1.hortonworks.com/ambari/suse11/1.x/updates/1.2.5.17/ambari.repo -O /etc/zypp/repos.d/ambari.repo;
+        wget http://mrplus.googlecode.com/files/jdk-6u31-linux-x64.bin;
+        mkdir /usr/jdk1.6.0_31;
+        cd /usr/jdk1.6.0_31;
+        chmod u+x jdk-6u31-linux-x64.bin;
+        ./jdk-6u31-linux-x64.bin;
+        mkdir /usr/java;
+        ln -s /usr/jdk1.6.0_31/jdk1.6.0_31 /usr/java/default;
+        ln -s /usr/java/default/bin/java /usr/bin/java;
+        export JAVA_HOME=/usr/java/default;
+        export PATH=$JAVA_HOME/bin:$PATH;
+        /etc/init.d/ntp restart;
+        wget http://public-repo-1.hortonworks.com/HDP/tools/1.3.0.0/hdp_manual_install_rpm_helper_files-1.3.0.1.3.0.0-107.tar.gz;
+        tar zxf hdp_manual_install_rpm_helper_files-1.3.0.1.3.0.0-107.tar.gz;
+        cd hdp_manual_install_rpm_helper_files-1.3.0.1.3.0.0-107;
+        zypper install hadoop hadoop-libhdfs hadoop-native hadoop-pipes hadoop-sbin openssl;
+        zypper install snappy snappy-devel;
+        ln -sf /usr/lib64/libsnappy.so /usr/lib/hadoop/lib/native/Linux-amd64-64/.;
+        zypper install lzo lzo-devel hadoop-lzo hadoop-lzo-native;
+        """
 
-  cmd = cmd.replace('\n', ' ;')
+  cmd = cmd.replace('\n', ' ')
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
 
@@ -415,78 +403,6 @@ def get_num_disks(instance_type):
     print >> stderr, ("WARNING: Don't know number of disks on instance type %s; assuming 1"
                       % instance_type)
     return 1
-
-
-# Deploy the configuration file templates in a given local directory to
-# a cluster, filling in any template parameters with information about the
-# cluster (e.g. lists of masters and slaves). Files are only deployed to
-# the first master instance in the cluster, and we expect the setup
-# script to be run on that instance to copy them to other nodes.
-def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
-  active_master = master_nodes[0].public_dns_name
-
-  num_disks = get_num_disks(opts.instance_type)
-  hdfs_data_dirs = "/mnt/ephemeral-hdfs/data"
-  mapred_local_dirs = "/mnt/hadoop/mrlocal"
-  spark_local_dirs = "/mnt/spark"
-  if num_disks > 1:
-    for i in range(2, num_disks + 1):
-      hdfs_data_dirs += ",/mnt%d/ephemeral-hdfs/data" % i
-      mapred_local_dirs += ",/mnt%d/hadoop/mrlocal" % i
-      spark_local_dirs += ",/mnt%d/spark" % i
-
-  cluster_url = "%s:7077" % active_master
-
-  if "." in opts.spark_version:
-    # Pre-built spark & shark deploy
-    (spark_v, shark_v) = get_spark_shark_version(opts)
-  else:
-    # Spark-only custom deploy
-    spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
-    shark_v = ""
-    modules = filter(lambda x: x != "shark", modules)
-
-  template_vars = {
-    "master_list": '\n'.join([i.public_dns_name for i in master_nodes]),
-    "active_master": active_master,
-    "slave_list": '\n'.join([i.public_dns_name for i in slave_nodes]),
-    "cluster_url": cluster_url,
-    "hdfs_data_dirs": hdfs_data_dirs,
-    "mapred_local_dirs": mapred_local_dirs,
-    "spark_local_dirs": spark_local_dirs,
-    "swap": str(opts.swap),
-    "modules": '\n'.join(modules),
-    "spark_version": spark_v,
-    "shark_version": shark_v,
-    "hadoop_major_version": opts.hadoop_major_version
-  }
-
-  # Create a temp directory in which we will place all the files to be
-  # deployed after we substitue template parameters in them
-  tmp_dir = tempfile.mkdtemp()
-  for path, dirs, files in os.walk(root_dir):
-    if path.find(".svn") == -1:
-      dest_dir = os.path.join('/', path[len(root_dir):])
-      local_dir = tmp_dir + dest_dir
-      if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
-      for filename in files:
-        if filename[0] not in '#.~' and filename[-1] != '~':
-          dest_file = os.path.join(dest_dir, filename)
-          local_file = tmp_dir + dest_file
-          with open(os.path.join(path, filename)) as src:
-            with open(local_file, "w") as dest:
-              text = src.read()
-              for key in template_vars:
-                text = text.replace("{{" + key + "}}", template_vars[key])
-              dest.write(text)
-              dest.close()
-  # rsync the whole directory over to the master machine
-  command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " +
-      "'%s/' '%s@%s:/'") % (opts.identity_file, tmp_dir, opts.user, active_master))
-  subprocess.check_call(command, shell=True)
-  # Remove the temp directory we created above
-  shutil.rmtree(tmp_dir)
 
 
 # Copy a file to a given host through scp, throwing an exception if scp fails
