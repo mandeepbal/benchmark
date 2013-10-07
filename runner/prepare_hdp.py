@@ -296,8 +296,6 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   master = master_nodes[0]
   ambari = ambari_nodes[0]
 
-  print "Ambari: %s" % ambari.public_dns_name
-
   opts.user = "ec2-user"
 
   if deploy_ssh_key:
@@ -327,25 +325,10 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   setup_ambari_master(ambari, opts)
   generate_hosts_and_key(master_nodes + ambari_nodes + slave_nodes, opts)
 
-  modules = ['spark', 'shark', 'ephemeral-hdfs', 'persistent-hdfs', 
-             'mapreduce', 'spark-standalone']
-
-  if opts.hadoop_major_version == "1":
-    modules = filter(lambda x: x != "mapreduce", modules)
-
-  if opts.ganglia:
-    modules.append('ganglia')
-
-  # NOTE: We should clone the repository before running deploy_files to
-  # prevent ec2-variables.sh from being overwritten
-  ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/mesos/spark-ec2.git -b v2")
-
-  print "Deploying files to master..."
-  deploy_files(conn, "deploy.generic", opts, master_nodes, slave_nodes, modules)
-
-  print "Running setup on master..."
-  setup_spark_cluster(master, opts)
-  print "Done!"
+  print "Ambari: %s" % ambari.public_dns_name
+  print "Master: %s" % master.public_dns_name
+  for slave in slave_nodes:
+    print "Slave: %s" % slave.public_dns_name
 
 
 def configure_node(node, opts, name):
@@ -364,20 +347,9 @@ def configure_node(node, opts, name):
   ssh(node.public_dns_name, opts, cmd)
 
 def generate_hosts_and_key(nodes, opts):
-  tmp_hosts_file = tempfile.NamedTemporaryFile(delete=False)
-  print >> tmp_hosts_file, "127.0.0.1 localhost.localdomain localhost"
-  print >> tmp_hosts_file, "::1 localhost6.localdomain6 localhost6"
-
   for node in nodes:
-    print >> tmp_hosts_file, "%s %s.hdp.hadoop %s" % (node.ip_address, node.assigned_name, node.assigned_name)
-  tmp_hosts_file.close()
-
-  print open(tmp_hosts_file.name).readlines()
-  for node in nodes:
-    scp(node.public_dns_name, opts, tmp_hosts_file.name, "/etc/hosts")
     scp(node.public_dns_name, opts, "ambari.pub", "/root/.ssh/ambari.pub")
     ssh(node.public_dns_name, opts, "cat /root/.ssh/ambari.pub >> /root/.ssh/authorized_keys")
-    ssh(node.public_dns_name, opts, "hostname %s.hdp.hadoop" % node.assigned_name)
     ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
 
 def setup_ambari_master(ambari, opts):
