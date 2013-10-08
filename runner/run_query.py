@@ -141,6 +141,8 @@ def parse_args():
       help="Whether to include Shark")
   parser.add_option("-r", "--redshift", action="store_true", default=False,
       help="Whether to include Redshift")
+  parser.add_option("--hive", action="store_true", default=False,
+      help="Whether to include Hive")
 
   parser.add_option("-g", "--shark-no-cache", action="store_true", 
       default=False, help="Disable caching in Shark")
@@ -157,11 +159,15 @@ def parse_args():
       help="Hostname of Shark master node")
   parser.add_option("-c", "--redshift-host",
       help="Hostname of Redshift ODBC endpoint")
+  parser.add_option("--hive-host",
+      help="Hostname of Hive master node")
 
   parser.add_option("-x", "--impala-identity-file",
       help="SSH private key file to use for logging into Impala node")
   parser.add_option("-y", "--shark-identity-file",
       help="SSH private key file to use for logging into Shark node")
+  parser.add_option("--hive-identity-file",
+      help="SSH private key file to use for logging into Hive node")
   parser.add_option("-u", "--redshift-username",
       help="Username for Redshift ODBC connection")
   parser.add_option("-p", "--redshift-password",
@@ -177,7 +183,7 @@ def parse_args():
 
   (opts, args) = parser.parse_args()
 
-  if not (opts.impala or opts.shark or opts.redshift):
+  if not (opts.impala or opts.shark or opts.redshift or opts.hive):
     parser.print_help()
     sys.exit(1)
 
@@ -457,6 +463,93 @@ def run_redshift_benchmark(opts):
     cursor.execute(CLEAN_QUERY)
   return times
 
+def run_hive_benchmark(opts):
+  def ssh_hive(command, user="root"):
+    command = 'sudo -u %s %s' % (user, command)
+    print command
+    ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+
+  prefix = str(time.time()).split(".")[0]
+  query_file_name = "%s_workload.sh" % prefix
+  slaves_file_name = "%s_slaves" % prefix
+  local_query_file = os.path.join(LOCAL_TMP_DIR, query_file_name)
+  local_slaves_file = os.path.join(LOCAL_TMP_DIR, slaves_file_name)
+  query_file = open(local_query_file, 'w')
+  remote_result_file = "/mnt/%s_results" % prefix
+  remote_tmp_file = "/mnt/%s_out" % prefix
+  remote_query_file = "/mnt/%s" % query_file_name
+
+  runner = "sudo -u hdfs hive"
+
+  query_list = "set mapred.reduce.tasks = %s;" % opts.reduce_tasks
+
+  # Throw away query for JVM warmup
+  # query_list += "SELECT COUNT(*) FROM scratch;"
+
+  if '4' not in opts.query_num:
+    query_list += CLEAN_QUERY
+  query_list += QUERY_MAP[opts.query_num][0]
+
+  query_list = re.sub("\s\s+", " ", query_list.replace('\n', ' '))
+
+  print "\nQuery:"
+  print query_list.replace(';', ";\n")
+
+  query_file.write(
+    "%s -e '%s' > %s 2>&1\n" % (runner, query_list, remote_tmp_file))
+
+  query_file.write(
+      "cat %s | grep Time | grep -v INFO |grep -v MapReduce >> %s\n" % (
+        remote_tmp_file, remote_result_file))
+
+  query_file.close()
+
+  print "Copying files to Hive"
+  scp_to(opts.hive_host, opts.hive_identity_file, "root", local_query_file,
+      remote_query_file)
+  ssh_hive("chmod 775 %s" % remote_query_file)
+
+  # Run benchmark
+  print "Running remote benchmark..."
+
+  # Collect results
+  results = []
+  contents = []
+
+  for i in range(opts.num_trials):
+    print "Query %s : Trial %i" % (opts.query_num, i+1)
+    ssh_hive("%s" % remote_query_file)
+    local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
+    scp_from(opts.hive_host, opts.hive_identity_file, "root",
+        "/mnt/%s_results" % prefix, local_results_file)
+    content = open(local_results_file).readlines()
+    all_times = map(lambda x: float(x.split(": ")[1].split(" ")[0]), content)
+
+    if '4' in opts.query_num:
+      query_times = all_times[-4:]
+      part_a = query_times[1]
+      part_b = query_times[3]
+      print "Parts: %s, %s" % (part_a, part_b)
+      result = float(part_a) + float(part_b)
+    else:
+      result = all_times[-1] # Only want time of last query
+
+    print "Result: ", result
+    print "Raw Times: ", content
+
+    results.append(result)
+    contents.append(content)
+
+    # Clean-up
+    #ssh_hive("rm /mnt/%s*" % prefix)
+    print "Clean Up...."
+    ssh_hive("rm /mnt/%s_results" % prefix)
+    os.remove(local_results_file)
+
+  os.remove(local_query_file)
+
+  return results, contents
+
 def get_percentiles(in_list):
   def get_pctl(lst, pctl):
     return lst[int(len(lst) * pctl)]
@@ -495,6 +588,8 @@ def main():
     results, contents = run_shark_benchmark(opts)
   if opts.redshift:
     results = run_redshift_benchmark(opts)
+  if opts.hive:
+    results = run_hive_benchmark(opts)
 
   if opts.impala:
     if opts.clear_buffer_cache:
@@ -507,6 +602,8 @@ def main():
     fname = "shark_mem"
   elif opts.redshift:
     fname = "redshift"
+  elif opts.hive:
+    fname = "hive"
 
   def prettylist(lst):
     return ",".join([str(k) for k in lst]) 

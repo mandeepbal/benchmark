@@ -271,7 +271,6 @@ def prepare_impala_dataset(opts):
 def prepare_hive_dataset(opts):
   def ssh_hive(command, user="root"):
     command = 'sudo -u %s %s' % (user, command)
-    print command
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
 
   if not opts.skip_s3_import:
