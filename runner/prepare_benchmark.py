@@ -34,6 +34,8 @@ def parse_args():
       help="Whether to include Shark")
   parser.add_option("-r", "--redshift", action="store_true", default=False,
       help="Whether to include Redshift")
+  parser.add_option("--hive", action="store_true", default=False,
+      help="Whether to include Hive")
 
   parser.add_option("-a", "--impala-host",
       help="Hostname of Impala state store node")
@@ -41,11 +43,15 @@ def parse_args():
       help="Hostname of Shark master node")
   parser.add_option("-c", "--redshift-host",
       help="Hostname of Redshift ODBC endpoint")
+  parser.add_option("--hive-host",
+      help="Hostname of Hive master node")
 
   parser.add_option("-x", "--impala-identity-file",
       help="SSH private key file to use for logging into Impala node")
   parser.add_option("-y", "--shark-identity-file",
       help="SSH private key file to use for logging into Shark node")
+  parser.add_option("--hive-identity-file",
+      help="SSH private key file to use for logging into Hive node")
   parser.add_option("-u", "--redshift-username",
       help="Username for Redshift ODBC connection")
   parser.add_option("-p", "--redshift-password",
@@ -69,7 +75,7 @@ def parse_args():
 
   (opts, args) = parser.parse_args()
 
-  if not (opts.impala or opts.shark or opts.redshift):
+  if not (opts.impala or opts.shark or opts.redshift or opts.hive):
     parser.print_help()
     sys.exit(1)
 
@@ -262,6 +268,51 @@ def prepare_impala_dataset(opts):
     "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"")
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
+def prepare_hive_dataset(opts):
+  def ssh_hive(command, user="root"):
+    command = 'runuser -l %s -c "%s"' % (user, command)
+    print command
+    ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+
+  if not opts.skip_s3_import:
+    print "=== IMPORTING BENCHMARK FROM S3 ==="
+    try:
+      ssh_hive("hadoop dfs -mkdir /tmp/benchmark", user="hdfs")
+    except Exception:
+      pass # Folder may already exist
+
+    cp_rankings = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/rankings/ " \
+                  "/tmp/benchmark/rankings/" % (opts.aws_key_id,
+                                                opts.aws_key,
+                                                opts.file_format, opts.data_prefix)
+    cp_uservisits = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+                    "/tmp/benchmark/uservisits/" % (opts.aws_key_id,
+                                                    opts.aws_key,
+                                                    opts.file_format, opts.data_prefix)
+    ssh_hive(cp_rankings, user='hdfs')
+    ssh_hive(cp_uservisits, user='hdfs')
+
+  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS rankings; " \
+    "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/rankings\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS uservisits; " \
+    "CREATE EXTERNAL TABLE uservisits (sourceIP STRING, "\
+    "destURL STRING," \
+    "visitDate STRING,adRevenue DOUBLE,userAgent STRING,countryCode STRING," \
+    "languageCode STRING,searchWord STRING,duration INT ) " \
+    "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"",
+  user="hdfs")
+
+  print "=== FINISHED CREATING BENCHMARK DATA ==="
+
 def prepare_redshift_dataset(opts):
   def query_and_print(cursor, query):
     cursor.execute(query)
@@ -349,6 +400,8 @@ def main():
     prepare_shark_dataset(opts)
   if opts.redshift:
     prepare_redshift_dataset(opts)
+  if opts.hive:
+    prepare_hive_dataset(opts)
 
 if __name__ == "__main__":
   main()
