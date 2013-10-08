@@ -270,7 +270,7 @@ def prepare_impala_dataset(opts):
 
 def prepare_hive_dataset(opts):
   def ssh_hive(command, user="root"):
-    command = 'runuser -l %s -c "%s"' % (user, command)
+    command = 'sudo -u %s %s' % (user, command)
     print command
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
 
