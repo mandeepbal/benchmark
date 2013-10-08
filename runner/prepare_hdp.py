@@ -354,6 +354,9 @@ def generate_hosts_and_key(nodes, opts):
     scp(node.public_dns_name, opts, "ambari.pub", "/root/.ssh/ambari.pub")
     ssh(node.public_dns_name, opts, "cat /root/.ssh/ambari.pub >> /root/.ssh/authorized_keys")
     ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
+    ssh(node.public_dns_name, opts, "mkfs.ext4 /dev/xvdz")
+    ssh(node.public_dns_name, opts, "mkdir /hadoop")
+    ssh(node.public_dns_name, opts, "mount /dev/xvdz /hadoop")
 
 def setup_ambari_master(ambari, opts):
   cmd = """
