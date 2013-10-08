@@ -330,6 +330,10 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   for slave in slave_nodes:
     print "Slave: %s" % slave.public_dns_name
 
+  print "Master: %s" % master.private_dns_name
+  print "Slaves:"
+  for slave in slave_nodes:
+    print slave.private_dns_name
 
 def configure_node(node, opts, name):
   cmd = """
