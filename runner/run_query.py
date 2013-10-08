@@ -589,7 +589,7 @@ def main():
   if opts.redshift:
     results = run_redshift_benchmark(opts)
   if opts.hive:
-    results = run_hive_benchmark(opts)
+    results, contents = run_hive_benchmark(opts)
 
   if opts.impala:
     if opts.clear_buffer_cache:
