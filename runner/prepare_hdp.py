@@ -30,6 +30,7 @@ import sys
 import tempfile
 import time
 import urllib2
+import multiprocessing
 from optparse import OptionParser
 from sys import stderr
 import boto
@@ -155,7 +156,7 @@ def is_active(instance):
 # and then starting new instances in them.
 # Returns a tuple of EC2 reservation objects for the master and slaves
 # Fails if there already instances running in the cluster's groups.
-def launch_cluster(conn, opts, cluster_name):
+def launch_cluster(conn, OPTS, cluster_name):
   print "Setting up security groups..."
   master_group = get_or_make_group(conn, cluster_name + "-master")
   slave_group = get_or_make_group(conn, cluster_name + "-slaves")
@@ -181,10 +182,10 @@ def launch_cluster(conn, opts, cluster_name):
     ambari_group.authorize('tcp', 0, 65535, '0.0.0.0/0')
 
   # Check if instances are already running in our groups
-  if opts.resume:
-    return get_existing_cluster(conn, opts, cluster_name, die_on_error=False)
+  if OPTS.resume:
+    return get_existing_cluster(conn, OPTS, cluster_name, die_on_error=False)
   else:
-    active_nodes = get_existing_cluster(conn, opts, cluster_name, die_on_error=False)
+    active_nodes = get_existing_cluster(conn, OPTS, cluster_name, die_on_error=False)
     if any(active_nodes):
       print >> stderr, ("ERROR: There are already instances running in " +
           "group %s or %s" % (master_group.name, slave_group.name))
@@ -193,31 +194,31 @@ def launch_cluster(conn, opts, cluster_name):
     print "Launching instances..."
 
     try:
-      image = conn.get_all_images(image_ids=[opts.ami])[0]
+      image = conn.get_all_images(image_ids=[OPTS.ami])[0]
     except:
-      print >> stderr, "Could not find AMI " + opts.ami
+      print >> stderr, "Could not find AMI " + OPTS.ami
       sys.exit(1)
 
     # Create block device mapping so that we can add an EBS volume if asked to
     block_map = BlockDeviceMapping()
-    if opts.ebs_vol_size > 0:
+    if OPTS.ebs_vol_size > 0:
       device = EBSBlockDeviceType()
-      device.size = opts.ebs_vol_size
+      device.size = OPTS.ebs_vol_size
       device.delete_on_termination = True
       block_map["/dev/sdv"] = device
 
     # Launch slaves
     # Launch non-spot instances
-    zones = get_zones(conn, opts)
+    zones = get_zones(conn, OPTS)
     num_zones = len(zones)
     i = 0
     slave_nodes = []
     for zone in zones:
-      num_slaves_this_zone = get_partition(opts.slaves, num_zones, i)
+      num_slaves_this_zone = get_partition(OPTS.slaves, num_zones, i)
       if num_slaves_this_zone > 0:
-        slave_res = image.run(key_name = opts.key_pair,
+        slave_res = image.run(key_name = OPTS.key_pair,
                               security_groups = [slave_group],
-                              instance_type = opts.instance_type,
+                              instance_type = OPTS.instance_type,
                               placement = zone,
                               min_count = num_slaves_this_zone,
                               max_count = num_slaves_this_zone,
@@ -228,30 +229,30 @@ def launch_cluster(conn, opts, cluster_name):
       i += 1
 
     # Launch masters
-    master_type = opts.master_instance_type
+    master_type = OPTS.master_instance_type
     if master_type == "":
-      master_type = opts.instance_type
-    if opts.zone == 'all':
-      opts.zone = random.choice(conn.get_all_zones()).name
-    master_res = image.run(key_name = opts.key_pair,
+      master_type = OPTS.instance_type
+    if OPTS.zone == 'all':
+      OPTS.zone = random.choice(conn.get_all_zones()).name
+    master_res = image.run(key_name = OPTS.key_pair,
                           security_groups = [master_group],
                           instance_type = master_type,
-                          placement = opts.zone,
+                          placement = OPTS.zone,
                           min_count = 1,
                           max_count = 1,
                           block_device_map = block_map)
     master_nodes = master_res.instances
     print "Launched master in %s, regid = %s" % (zone, master_res.id)
 
-    ambari_type = opts.master_instance_type
+    ambari_type = OPTS.master_instance_type
     if ambari_type == "":
-      ambari_type = opts.instance_type
-    if opts.zone == 'all':
-      opts.zone = random.choice(conn.get_all_zones()).name
-    ambari_res = image.run(key_name = opts.key_pair,
+      ambari_type = OPTS.instance_type
+    if OPTS.zone == 'all':
+      OPTS.zone = random.choice(conn.get_all_zones()).name
+    ambari_res = image.run(key_name = OPTS.key_pair,
                           security_groups = [ambari_group],
                           instance_type = ambari_type,
-                          placement = opts.zone,
+                          placement = OPTS.zone,
                           min_count = 1,
                           max_count = 1,
                           block_device_map = block_map)
@@ -264,7 +265,7 @@ def launch_cluster(conn, opts, cluster_name):
 
 # Get the EC2 instances in an existing cluster if available.
 # Returns a tuple of lists of EC2 instance objects for the masters and slaves
-def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
+def get_existing_cluster(conn, OPTS, cluster_name, die_on_error=True):
   print "Searching for existing cluster " + cluster_name + "..."
   reservations = conn.get_all_instances()
   master_nodes = []
@@ -292,46 +293,36 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
-def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key, cluster_name):
+def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ssh_key, cluster_name):
   master = master_nodes[0]
   ambari = ambari_nodes[0]
+  all_nodes = master_nodes + slave_nodes + ambari_nodes
+  pool = multiprocessing.Pool(len(all_nodes))
 
-  opts.user = "ec2-user"
+  print "Enabling root on all nodes..."
+  OPTS.user = "ec2-user"
+  map(enable_root, all_nodes)
 
-  for node in master_nodes + slave_nodes + ambari_nodes:
-    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"| sudo tee -a /etc/ssh/sshd_config')
-    ssh(node.public_dns_name, opts, 'echo "JAVA_HOME=/usr/local"| sudo tee -a /root/.bash_profile')
-    ssh(node.public_dns_name, opts, 'echo "SCALA_HOME=/usr/local"| sudo tee -a /root/.bash_profile')
-    ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
+  OPTS.user = "root"
 
-  opts.user = "root"
+  print "Copying SSH key %s to ambari & master..." % OPTS.identity_file
+  map(deploy_key, (ambari, master))
 
-  if deploy_ssh_key:
-    print "Copying SSH key %s to master..." % opts.identity_file
-    ssh(master.public_dns_name, opts, 'mkdir -p ~/.ssh')
-    scp(master.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
-    ssh(master.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
-
-    print "Copying SSH key %s to ambari..." % opts.identity_file
-    ssh(ambari.public_dns_name, opts, 'mkdir -p ~/.ssh')
-    scp(ambari.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
-    ssh(ambari.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
-
-  configure_node(master, opts, "hdpmaster1")
-  configure_node(ambari, opts, "ambarimaster")
-  for i, node in enumerate(slave_nodes):
-    configure_node(node, opts, "hdpslave%i" % i)
+  print "Configuring Nodes..."
+  map(configure_node, all_nodes)
 
   wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
-  setup_ambari_master(ambari, opts)
+  print "Setting up ambari node..."
+  setup_ambari_master(ambari, OPTS)
 
-  start_services(master_nodes + ambari_nodes + slave_nodes, opts)
+  print "Starting All Services..."
+  map(start_services, all_nodes)
 
   args = {
     'runner' : '/Users/ahirreddy/Work/benchmark/spark-0.8.0-incubating/ec2/spark-ec2',
-    'keyname' : opts.key_pair,
-    'idfile' : opts.identity_file,
+    'keyname' : OPTS.key_pair,
+    'idfile' : OPTS.identity_file,
     'cluster' : cluster_name,
   }
 
@@ -347,26 +338,43 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   for slave in slave_nodes:
     print slave.private_dns_name
 
-def configure_node(node, opts, name):
+def enable_root(node):
+  cmd = """
+  echo "PermitRootLogin yes" | sudo tee -a /etc/ssh/sshd_config;
+  echo "JAVA_HOME=/usr/local" | sudo tee -a /root/.bash_profile;
+  echo "SCALA_HOME=/usr/local" | sudo tee -a /root/.bash_profile;
+  sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys;
+  sudo /etc/init.d/sshd restart;
+  """
+
+  ssh(node.public_dns_name, OPTS, cmd)
+
+def configure_node(node):
   cmd = """
         yum -y install git;
         sed -e 's/SELINUX=enforcing//g' /etc/selinux/config > /etc/selinux/config;
         echo "SELINUX=disabled" >> /etc/selinux/config;
-        sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
         chkconfig iptables off;
         chkconfig ip6tables off;
         shutdown -r now;
-        """ % name
+        """
 
-  cmd = cmd.replace('\n', ' ')
-  node.assigned_name = name
-  ssh(node.public_dns_name, opts, cmd)
+  ssh(node.public_dns_name, OPTS, cmd)
 
-def start_services(nodes, opts):
-  for node in nodes:
-    ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
+def start_services(node):
+  return ssh(node.public_dns_name, OPTS, "/etc/init.d/ntpd restart")
 
-def setup_ambari_master(ambari, opts):
+# Deploy private key to ambari and master nodes
+def deploy_key(node):
+    ssh(node.public_dns_name, OPTS, 'mkdir -p ~/.ssh')
+    scp(node.public_dns_name, OPTS, OPTS.identity_file, '~/.ssh/id_rsa')
+
+    ssh(node.public_dns_name, OPTS, 'chmod 600 ~/.ssh/id_rsa')
+
+# Setup the Ambari Master and start the ambari server
+# TODO: Find a way to completely automate, currently user has to interact
+# with install process
+def setup_ambari_master(ambari, OPTS):
   cmd = """
         wget http://public-repo-1.hortonworks.com/ambari/centos6/1.x/GA/ambari.repo;
         cp ambari.repo /etc/yum.repos.d;
@@ -376,12 +384,8 @@ def setup_ambari_master(ambari, opts):
         ambari-server setup;
         ambari-server start;
         ambari-server status;
-        ssh-keygen -t rsa;
         """
-  cmd = cmd.replace('\n', ' ')
-  ssh(ambari.public_dns_name, opts, cmd)
-  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa.pub", "ambari.pub")
-  scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa", "ambari")
+  ssh(ambari.public_dns_name, OPTS, cmd)
 
 
 # Wait for a whole cluster (masters, slaves and ZooKeeper) to start up
@@ -396,20 +400,24 @@ def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes, ambari_nodes):
 
 
 # Copy a file to a given host through scp, throwing an exception if scp fails
-def scp(host, opts, local_file, dest_file):
+def scp(host, OPTS, local_file, dest_file):
   subprocess.check_call(
       "scp -q -o StrictHostKeyChecking=no -i %s '%s' '%s@%s:%s'" %
-      (opts.identity_file, local_file, opts.user, host, dest_file), shell=True)
+      (OPTS.identity_file, local_file, OPTS.user, host, dest_file), shell=True)
 
-def scp_download(host, opts, remote_file, local_file):
+
+# Download a file from a given host through scp, throwing an exception if scp fails
+def scp_download(host, OPTS, remote_file, local_file):
   subprocess.check_call(
       "scp -q -o StrictHostKeyChecking=no -i %s '%s@%s:%s' '%s'" %
-      (opts.identity_file, opts.user, host, remote_file, local_file), shell=True)
+      (OPTS.identity_file, OPTS.user, host, remote_file, local_file), shell=True)
+
 
 # Run a command on a host through ssh, retrying up to two times
 # and then throwing an exception if ssh continues to fail.
-def ssh(host, opts, command):
-  cmd = "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (opts.identity_file, opts.user, host, command)
+def ssh(host, OPTS, command):
+  command = command.replace('\n', ' ')
+  cmd = "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (OPTS.identity_file, OPTS.user, host, command)
   print cmd
   tries = 0
   while True:
@@ -425,11 +433,11 @@ def ssh(host, opts, command):
 
 
 # Gets a list of zones to launch instances in
-def get_zones(conn, opts):
-  if opts.zone == 'all':
+def get_zones(conn, OPTS):
+  if OPTS.zone == 'all':
     zones = [z.name for z in conn.get_all_zones()]
   else:
-    zones = [opts.zone]
+    zones = [OPTS.zone]
   return zones
 
 
@@ -442,20 +450,21 @@ def get_partition(total, num_partitions, current_partitions):
 
 
 def main():
-  (opts, action, cluster_name) = parse_args()
+  global OPTS
+  (OPTS, action, cluster_name) = parse_args()
   try:
-    conn = ec2.connect_to_region(opts.region)
+    conn = ec2.connect_to_region(OPTS.region)
   except Exception as e:
     print >> stderr, (e)
     sys.exit(1)
 
   # Select an AZ at random if it was not specified.
-  if opts.zone == "":
-    opts.zone = random.choice(conn.get_all_zones()).name
+  if OPTS.zone == "":
+    OPTS.zone = random.choice(conn.get_all_zones()).name
 
-  (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, opts, cluster_name)
-  wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
-  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, True, cluster_name)
+  (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, OPTS, cluster_name)
+  wait_for_cluster(conn, OPTS.wait, master_nodes, slave_nodes, ambari_nodes)
+  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, True, cluster_name)
 
 if __name__ == "__main__":
   logging.basicConfig()
