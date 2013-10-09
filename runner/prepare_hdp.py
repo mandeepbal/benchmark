@@ -299,7 +299,9 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   opts.user = "ec2-user"
 
   for node in master_nodes + slave_nodes + ambari_nodes:
-    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
+    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"| sudo tee -a /etc/ssh/sshd_config')
+    ssh(node.public_dns_name, opts, 'echo "JAVA_HOME=/usr/local"| sudo tee -a /root/.bash_profile')
+    ssh(node.public_dns_name, opts, 'echo "SCALA_HOME=/usr/local"| sudo tee -a /root/.bash_profile')
     ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
 
   opts.user = "root"
