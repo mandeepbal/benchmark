@@ -292,11 +292,17 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
-def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key):
+def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ssh_key, cluster_name):
   master = master_nodes[0]
   ambari = ambari_nodes[0]
 
   opts.user = "ec2-user"
+
+  for node in master_nodes + slave_nodes + ambari_nodes:
+    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
+    ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
+
+  opts.user = "root"
 
   if deploy_ssh_key:
     print "Copying SSH key %s to master..." % opts.identity_file
@@ -309,12 +315,6 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
     scp(ambari.public_dns_name, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(ambari.public_dns_name, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-  for node in master_nodes + slave_nodes + ambari_nodes:
-    ssh(node.public_dns_name, opts, 'echo "PermitRootLogin yes"|sudo tee -a /etc/ssh/sshd_config')
-    ssh(node.public_dns_name, opts, 'sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys; sudo /etc/init.d/sshd restart;')
-
-  opts.user = "root"
-
   configure_node(master, opts, "hdpmaster1")
   configure_node(ambari, opts, "ambarimaster")
   for i, node in enumerate(slave_nodes):
@@ -323,7 +323,17 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
   wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
   setup_ambari_master(ambari, opts)
-  generate_hosts_and_key(master_nodes + ambari_nodes + slave_nodes, opts)
+
+  start_services(master_nodes + ambari_nodes + slave_nodes, opts)
+
+  args = {
+    'runner' : '/Users/ahirreddy/Work/benchmark/spark-0.8.0-incubating/ec2/spark-ec2',
+    'keyname' : opts.key_pair,
+    'idfile' : opts.identity_file,
+    'cluster' : cluster_name,
+  }
+
+  subprocess.check_call("%(runner)s -k %(keyname)s -i %(idfile)s -w 0 --no-ganglia start %(cluster)s" % args, shell=True)
 
   print "Ambari: %s" % ambari.public_dns_name
   print "Master: %s" % master.public_dns_name
@@ -337,6 +347,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, deploy_ss
 
 def configure_node(node, opts, name):
   cmd = """
+        yum -y install git;
         sed -e 's/SELINUX=enforcing//g' /etc/selinux/config > /etc/selinux/config;
         echo "SELINUX=disabled" >> /etc/selinux/config;
         sed -e 's/HOSTNAME.\+/%s.hdp.hadoop/g' /etc/sysconfig/network > /etc/sysconfig/network;
@@ -349,14 +360,9 @@ def configure_node(node, opts, name):
   node.assigned_name = name
   ssh(node.public_dns_name, opts, cmd)
 
-def generate_hosts_and_key(nodes, opts):
+def start_services(nodes, opts):
   for node in nodes:
-    scp(node.public_dns_name, opts, "ambari.pub", "/root/.ssh/ambari.pub")
-    ssh(node.public_dns_name, opts, "cat /root/.ssh/ambari.pub >> /root/.ssh/authorized_keys")
     ssh(node.public_dns_name, opts, "/etc/init.d/ntpd restart")
-    ssh(node.public_dns_name, opts, "mkfs.ext4 /dev/xvdz")
-    ssh(node.public_dns_name, opts, "mkdir /hadoop")
-    ssh(node.public_dns_name, opts, "mount /dev/xvdz /hadoop")
 
 def setup_ambari_master(ambari, opts):
   cmd = """
@@ -375,14 +381,6 @@ def setup_ambari_master(ambari, opts):
   scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa.pub", "ambari.pub")
   scp_download(ambari.public_dns_name, opts, "/root/.ssh/id_rsa", "ambari")
 
-def setup_spark_cluster(master, opts):
-  ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
-  ssh(master, opts, "spark-ec2/setup.sh")
-  print "Spark standalone cluster started at http://%s:8080" % master
-
-  if opts.ganglia:
-    print "Ganglia started at http://%s:5080/ganglia" % master
-
 
 # Wait for a whole cluster (masters, slaves and ZooKeeper) to start up
 def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes, ambari_nodes):
@@ -393,109 +391,6 @@ def wait_for_cluster(conn, wait_secs, master_nodes, slave_nodes, ambari_nodes):
   wait_for_instances(conn, ambari_nodes)
   print "Waiting %d more seconds..." % wait_secs
   time.sleep(wait_secs)
-
-
-# Get number of local disks available for a given EC2 instance type.
-def get_num_disks(instance_type):
-  # From http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?InstanceStorage.html
-  disks_by_instance = {
-    "m1.small":    1,
-    "m1.medium":   1,
-    "m1.large":    2,
-    "m1.xlarge":   4,
-    "t1.micro":    1,
-    "c1.medium":   1,
-    "c1.xlarge":   4,
-    "m2.xlarge":   1,
-    "m2.2xlarge":  1,
-    "m2.4xlarge":  2,
-    "cc1.4xlarge": 2,
-    "cc2.8xlarge": 4,
-    "cg1.4xlarge": 2,
-    "hs1.8xlarge": 24,
-    "cr1.8xlarge": 2,
-    "hi1.4xlarge": 2,
-    "m3.xlarge":   0,
-    "m3.2xlarge":  0
-  }
-  if instance_type in disks_by_instance:
-    return disks_by_instance[instance_type]
-  else:
-    print >> stderr, ("WARNING: Don't know number of disks on instance type %s; assuming 1"
-                      % instance_type)
-    return 1
-
-
-# Deploy the configuration file templates in a given local directory to
-# a cluster, filling in any template parameters with information about the
-# cluster (e.g. lists of masters and slaves). Files are only deployed to
-# the first master instance in the cluster, and we expect the setup
-# script to be run on that instance to copy them to other nodes.
-def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
-  active_master = master_nodes[0].public_dns_name
-
-  num_disks = get_num_disks(opts.instance_type)
-  hdfs_data_dirs = "/mnt/ephemeral-hdfs/data"
-  mapred_local_dirs = "/mnt/hadoop/mrlocal"
-  spark_local_dirs = "/mnt/spark"
-  if num_disks > 1:
-    for i in range(2, num_disks + 1):
-      hdfs_data_dirs += ",/mnt%d/ephemeral-hdfs/data" % i
-      mapred_local_dirs += ",/mnt%d/hadoop/mrlocal" % i
-      spark_local_dirs += ",/mnt%d/spark" % i
-
-  cluster_url = "%s:7077" % active_master
-
-  if "." in opts.spark_version:
-    # Pre-built spark & shark deploy
-    (spark_v, shark_v) = get_spark_shark_version(opts)
-  else:
-    # Spark-only custom deploy
-    spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
-    shark_v = ""
-    modules = filter(lambda x: x != "shark", modules)
-
-  template_vars = {
-    "master_list": '\n'.join([i.public_dns_name for i in master_nodes]),
-    "active_master": active_master,
-    "slave_list": '\n'.join([i.public_dns_name for i in slave_nodes]),
-    "cluster_url": cluster_url,
-    "hdfs_data_dirs": hdfs_data_dirs,
-    "mapred_local_dirs": mapred_local_dirs,
-    "spark_local_dirs": spark_local_dirs,
-    "swap": str(opts.swap),
-    "modules": '\n'.join(modules),
-    "spark_version": spark_v,
-    "shark_version": shark_v,
-    "hadoop_major_version": opts.hadoop_major_version
-  }
-
-  # Create a temp directory in which we will place all the files to be
-  # deployed after we substitue template parameters in them
-  tmp_dir = tempfile.mkdtemp()
-  for path, dirs, files in os.walk(root_dir):
-    if path.find(".svn") == -1:
-      dest_dir = os.path.join('/', path[len(root_dir):])
-      local_dir = tmp_dir + dest_dir
-      if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
-      for filename in files:
-        if filename[0] not in '#.~' and filename[-1] != '~':
-          dest_file = os.path.join(dest_dir, filename)
-          local_file = tmp_dir + dest_file
-          with open(os.path.join(path, filename)) as src:
-            with open(local_file, "w") as dest:
-              text = src.read()
-              for key in template_vars:
-                text = text.replace("{{" + key + "}}", template_vars[key])
-              dest.write(text)
-              dest.close()
-  # rsync the whole directory over to the master machine
-  command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " +
-      "'%s/' '%s@%s:/'") % (opts.identity_file, tmp_dir, opts.user, active_master))
-  subprocess.check_call(command, shell=True)
-  # Remove the temp directory we created above
-  shutil.rmtree(tmp_dir)
 
 
 # Copy a file to a given host through scp, throwing an exception if scp fails
@@ -525,9 +420,6 @@ def ssh(host, opts, command):
       print "Couldn't connect to host {0}, waiting 30 seconds".format(e)
       time.sleep(30)
       tries = tries + 1
-
-
-
 
 
 # Gets a list of zones to launch instances in
@@ -561,7 +453,7 @@ def main():
 
   (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, opts, cluster_name)
   wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, ambari_nodes)
-  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, True)
+  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, opts, True, cluster_name)
 
 if __name__ == "__main__":
   logging.basicConfig()
