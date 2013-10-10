@@ -30,7 +30,7 @@ import sys
 import tempfile
 import time
 import urllib2
-import multiprocessing
+import threading
 from optparse import OptionParser
 from sys import stderr
 import boto
@@ -315,7 +315,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
   setup_ambari_master(ambari, OPTS)
 
   print "Starting All Services..."
-  concurrent_map(start_services, all_nodes)
+  concurrent_map(start_services, master_nodes + slave_nodes)
 
   args = {
     'runner' : '/Users/ahirreddy/Work/benchmark/spark-0.8.0-incubating/ec2/spark-ec2',
@@ -324,7 +324,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
     'cluster' : cluster_name,
   }
 
-  subprocess.check_call("%(runner)s -k %(keyname)s -i %(idfile)s -w 0 --no-ganglia start %(cluster)s" % args, shell=True)
+  ssh(ambari.public_dns_name, OPTS, "ambari-server start;")
 
   print "Ambari: %s" % ambari.public_dns_name
   print "Master: %s" % master.public_dns_name
@@ -467,11 +467,43 @@ def main():
   if OPTS.zone == "":
     OPTS.zone = random.choice(conn.get_all_zones()).name
 
-  (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, OPTS, cluster_name)
-  wait_for_cluster(conn, OPTS.wait, master_nodes, slave_nodes, ambari_nodes)
-  setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, True, cluster_name)
+  if action == "launch":
+    (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, OPTS, cluster_name)
+    wait_for_cluster(conn, OPTS.wait, master_nodes, slave_nodes, ambari_nodes)
+    setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, True, cluster_name)
+  elif action == "info":
+    (master, slave_nodes, ambari) = get_existing_cluster(
+      conn, OPTS, cluster_name, die_on_error=False)
+    print "Ambari: %s" % ambari[0].public_dns_name
+    print "Master: %s" % master[0].public_dns_name
+    for slave in slave_nodes:
+      print "Slave: %s" % slave.public_dns_name
+    print "Master: %s" % master[0].private_dns_name
+    print "Slaves:"
+    for slave in slave_nodes:
+      print slave.private_dns_name
+  elif action == "ambari-start":
+    (master, slave_nodes, ambari) = get_existing_cluster(
+      conn, OPTS, cluster_name, die_on_error=False)
+    print ambari[0].public_dns_name
+    ssh(ambari[0].public_dns_name, OPTS, "ambari-server start; ambari-server status;")
+  elif action == "destroy":
+    response = raw_input("Are you sure you want to destroy the cluster " +
+        cluster_name + "?\nALL DATA ON ALL NODES WILL BE LOST!!\n" +
+        "Destroy cluster " + cluster_name + " (y/N): ")
+    if response == "y":
+      (ambari_nodes, master_nodes, slave_nodes) = get_existing_cluster(
+          conn, OPTS, cluster_name, die_on_error=False)
+      print "Terminating ambari..."
+      for inst in ambari_nodes:
+        inst.terminate()
+      print "Terminating master..."
+      for inst in master_nodes:
+        inst.terminate()
+      print "Terminating slaves..."
+      for inst in slave_nodes:
+        inst.terminate()
 
-import threading
 
 def concurrent_map(func, data):
     """
