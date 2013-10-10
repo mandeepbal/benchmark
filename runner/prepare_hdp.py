@@ -34,7 +34,7 @@ import multiprocessing
 from optparse import OptionParser
 from sys import stderr
 import boto
-from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
+from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto import ec2
 
 # Configure and parse our command-line arguments
@@ -201,11 +201,10 @@ def launch_cluster(conn, OPTS, cluster_name):
 
     # Create block device mapping so that we can add an EBS volume if asked to
     block_map = BlockDeviceMapping()
-    if OPTS.ebs_vol_size > 0:
-      device = EBSBlockDeviceType()
-      device.size = OPTS.ebs_vol_size
-      device.delete_on_termination = True
-      block_map["/dev/sdv"] = device
+    device = BlockDeviceType()
+    device.ephemeral_name = 'ephemeral0'
+    device.delete_on_termination = True
+    block_map["/dev/sdv"] = device
 
     # Launch slaves
     # Launch non-spot instances
@@ -301,15 +300,15 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
 
   print "Enabling root on all nodes..."
   OPTS.user = "ec2-user"
-  map(enable_root, all_nodes)
+  concurrent_map(enable_root, all_nodes)
 
   OPTS.user = "root"
 
   print "Copying SSH key %s to ambari & master..." % OPTS.identity_file
-  map(deploy_key, (ambari, master))
+  concurrent_map(deploy_key, (ambari, master))
 
   print "Configuring Nodes..."
-  map(configure_node, all_nodes)
+  concurrent_map(configure_node, all_nodes)
 
   wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
@@ -317,7 +316,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
   setup_ambari_master(ambari, OPTS)
 
   print "Starting All Services..."
-  map(start_services, all_nodes)
+  concurrent_map(start_services, all_nodes)
 
   args = {
     'runner' : '/Users/ahirreddy/Work/benchmark/spark-0.8.0-incubating/ec2/spark-ec2',
@@ -362,7 +361,14 @@ def configure_node(node):
   ssh(node.public_dns_name, OPTS, cmd)
 
 def start_services(node):
-  return ssh(node.public_dns_name, OPTS, "/etc/init.d/ntpd restart")
+  cmd = """
+  mkfs.ext4 /dev/xvdz;
+  mkdir /hadoop;
+  mount /dev/xvdz /hadoop;
+  /etc/init.d/ntpd restart;
+  """
+
+  return ssh(node.public_dns_name, OPTS, cmd)
 
 # Deploy private key to ambari and master nodes
 def deploy_key(node):
@@ -385,7 +391,7 @@ def setup_ambari_master(ambari, OPTS):
         ambari-server start;
         ambari-server status;
         """
-  ssh(ambari.public_dns_name, OPTS, cmd)
+  ssh(ambari.public_dns_name, OPTS, cmd, stdin=None)
 
 
 # Wait for a whole cluster (masters, slaves and ZooKeeper) to start up
@@ -415,7 +421,7 @@ def scp_download(host, OPTS, remote_file, local_file):
 
 # Run a command on a host through ssh, retrying up to two times
 # and then throwing an exception if ssh continues to fail.
-def ssh(host, OPTS, command):
+def ssh(host, OPTS, command, stdin=os.devnull):
   command = command.replace('\n', ' ')
   cmd = "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (OPTS.identity_file, OPTS.user, host, command)
   print cmd
@@ -423,7 +429,7 @@ def ssh(host, OPTS, command):
   while True:
     try:
       return subprocess.check_call(
-        cmd, shell=True)
+        cmd, shell=True, stdin=stdin)
     except subprocess.CalledProcessError as e:
       if (tries > 2):
         raise e
@@ -465,6 +471,32 @@ def main():
   (master_nodes, slave_nodes, ambari_nodes) = launch_cluster(conn, OPTS, cluster_name)
   wait_for_cluster(conn, OPTS.wait, master_nodes, slave_nodes, ambari_nodes)
   setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, True, cluster_name)
+
+import threading
+
+def concurrent_map(func, data):
+    """
+    Similar to the bultin function map(). But spawn a thread for each argument
+    and apply `func` concurrently.
+
+    Note: unlike map(), we cannot take an iterable argument. `data` should be an
+    indexable sequence.
+    """
+
+    N = len(data)
+    result = [None] * N
+
+    # wrapper to dispose the result in the right slot
+    def task_wrapper(i):
+        result[i] = func(data[i])
+
+    threads = [threading.Thread(target=task_wrapper, args=(i,)) for i in xrange(N)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    return result
 
 if __name__ == "__main__":
   logging.basicConfig()
