@@ -296,7 +296,6 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
   master = master_nodes[0]
   ambari = ambari_nodes[0]
   all_nodes = master_nodes + slave_nodes + ambari_nodes
-  pool = multiprocessing.Pool(len(all_nodes))
 
   print "Enabling root on all nodes..."
   OPTS.user = "ec2-user"
@@ -421,9 +420,9 @@ def scp_download(host, OPTS, remote_file, local_file):
 
 # Run a command on a host through ssh, retrying up to two times
 # and then throwing an exception if ssh continues to fail.
-def ssh(host, OPTS, command, stdin=os.devnull):
+def ssh(host, OPTS, command, stdin=open(os.devnull, 'w')):
   command = command.replace('\n', ' ')
-  cmd = "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (OPTS.identity_file, OPTS.user, host, command)
+  cmd = "ssh -t -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" % (OPTS.identity_file, OPTS.user, host, command)
   print cmd
   tries = 0
   while True:
