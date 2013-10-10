@@ -287,12 +287,26 @@ def prepare_hive_dataset(opts):
                   "/tmp/benchmark/rankings/" % (opts.aws_key_id,
                                                 opts.aws_key,
                                                 opts.file_format, opts.data_prefix)
+
     cp_uservisits = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/uservisits/ " \
                     "/tmp/benchmark/uservisits/" % (opts.aws_key_id,
                                                     opts.aws_key,
                                                     opts.file_format, opts.data_prefix)
+
+    cp_crawl = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/crawl/ " \
+               "/tmp/benchmark/crawl/" % (opts.aws_key_id,
+                                          opts.aws_key,
+                                          opts.file_format, opts.data_prefix)
+
+    cp_scratch = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/scratch/ " \
+                 "/tmp/benchmark/scratch/" % (opts.aws_key_id,
+                                              opts.aws_key,
+                                              opts.file_format, opts.data_prefix)
+
     ssh_hive(cp_rankings, user='hdfs')
     ssh_hive(cp_uservisits, user='hdfs')
+    ssh_hive(cp_crawl, user='hdfs')
+    ssh_hive(cp_scratch, user='hdfs')
 
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
   ssh_hive(
@@ -311,6 +325,19 @@ def prepare_hive_dataset(opts):
     "languageCode STRING,searchWord STRING,duration INT ) " \
     "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
     "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS scratch; " \
+    "CREATE EXTERNAL TABLE scratch (pageURL STRING, pageRank INT, " \
+    "avgDuration INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\",\\\" " \
+    "STORED AS TEXTFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS documents; " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
+    "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
