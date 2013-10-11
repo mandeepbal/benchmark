@@ -323,7 +323,7 @@ def prepare_hive_dataset(opts):
 
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS documents; " \
-    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS SEQUENCEFILE" \
     "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
