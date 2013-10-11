@@ -276,8 +276,8 @@ def prepare_hive_dataset(opts):
   if not opts.skip_s3_import:
     print "=== IMPORTING BENCHMARK FROM S3 ==="
     try:
-      ssh_hive("hadoop dfs -rmr /tmp/benchmark", user="hdfs")
-      ssh_hive("hadoop dfs -rmr .Trash", user="hdfs")
+      ssh_hive("hadoop dfs -rmr -skipTrash /tmp/benchmark", user="hdfs")
+      ssh_hive("hadoop dfs -rmr -skipTrash .Trash", user="hdfs")
       ssh_hive("hadoop dfs -expunge", user="hdfs")
       ssh_hive("hadoop dfs -mkdir /tmp/benchmark", user="hdfs")
     except Exception:
