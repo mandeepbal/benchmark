@@ -207,25 +207,81 @@ def launch_cluster(conn, OPTS, cluster_name):
     block_map["/dev/sdv"] = device
 
     # Launch slaves
-    # Launch non-spot instances
-    zones = get_zones(conn, OPTS)
-    num_zones = len(zones)
-    i = 0
-    slave_nodes = []
-    for zone in zones:
-      num_slaves_this_zone = get_partition(OPTS.slaves, num_zones, i)
-      if num_slaves_this_zone > 0:
-        slave_res = image.run(key_name = OPTS.key_pair,
-                              security_groups = [slave_group],
-                              instance_type = OPTS.instance_type,
-                              placement = zone,
-                              min_count = num_slaves_this_zone,
-                              max_count = num_slaves_this_zone,
-                              block_device_map = block_map)
-        slave_nodes += slave_res.instances
-        print "Launched %d slaves in %s, regid = %s" % (num_slaves_this_zone,
-                                                        zone, slave_res.id)
-      i += 1
+    if OPTS.spot_price != None:
+      # Launch spot instances with the requested price
+      print ("Requesting %d slaves as spot instances with price $%.3f" %
+            (OPTS.slaves, OPTS.spot_price))
+      zones = get_zones(conn, OPTS)
+      num_zones = len(zones)
+      i = 0
+      my_req_ids = []
+      for zone in zones:
+        num_slaves_this_zone = get_partition(OPTS.slaves, num_zones, i)
+        slave_reqs = conn.request_spot_instances(
+            price = OPTS.spot_price,
+            image_id = OPTS.ami,
+            launch_group = "launch-group-%s" % cluster_name,
+            placement = zone,
+            count = num_slaves_this_zone,
+            key_name = OPTS.key_pair,
+            security_groups = [slave_group],
+            instance_type = OPTS.instance_type,
+            block_device_map = block_map)
+        my_req_ids += [req.id for req in slave_reqs]
+        i += 1
+
+      print "Waiting for spot instances to be granted..."
+      try:
+        while True:
+          time.sleep(10)
+          reqs = conn.get_all_spot_instance_requests()
+          id_to_req = {}
+          for r in reqs:
+            id_to_req[r.id] = r
+          active_instance_ids = []
+          for i in my_req_ids:
+            if i in id_to_req and id_to_req[i].state == "active":
+              active_instance_ids.append(id_to_req[i].instance_id)
+          if len(active_instance_ids) == OPTS.slaves:
+            print "All %d slaves granted" % OPTS.slaves
+            reservations = conn.get_all_instances(active_instance_ids)
+            slave_nodes = []
+            for r in reservations:
+              slave_nodes += r.instances
+            break
+          else:
+            print "%d of %d slaves granted, waiting longer" % (
+              len(active_instance_ids), OPTS.slaves)
+      except:
+        print "Canceling spot instance requests"
+        conn.cancel_spot_instance_requests(my_req_ids)
+        # Log a warning if any of these requests actually launched instances:
+        (master_nodes, slave_nodes) = get_existing_cluster(
+            conn, OPTS, cluster_name, die_on_error=False)
+        running = len(master_nodes) + len(slave_nodes)
+        if running:
+          print >> stderr, ("WARNING: %d instances are still running" % running)
+        sys.exit(0)
+    else:
+      # Launch non-spot instances
+      zones = get_zones(conn, OPTS)
+      num_zones = len(zones)
+      i = 0
+      slave_nodes = []
+      for zone in zones:
+        num_slaves_this_zone = get_partition(OPTS.slaves, num_zones, i)
+        if num_slaves_this_zone > 0:
+          slave_res = image.run(key_name = OPTS.key_pair,
+                                security_groups = [slave_group],
+                                instance_type = OPTS.instance_type,
+                                placement = zone,
+                                min_count = num_slaves_this_zone,
+                                max_count = num_slaves_this_zone,
+                                block_device_map = block_map)
+          slave_nodes += slave_res.instances
+          print "Launched %d slaves in %s, regid = %s" % (num_slaves_this_zone,
+                                                          zone, slave_res.id)
+        i += 1
 
     # Launch masters
     master_type = OPTS.master_instance_type
