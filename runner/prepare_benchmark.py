@@ -303,6 +303,8 @@ def prepare_hive_dataset(opts):
     ssh_hive(cp_crawl, user='hdfs')
 
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  scp_to(opts.hive_host, opts.hive_identity_file, "root", "udf/url_count.py",
+      "/root/url_count.py")
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS rankings; " \
     "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
