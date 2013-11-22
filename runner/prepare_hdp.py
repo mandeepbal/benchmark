@@ -215,8 +215,30 @@ def launch_cluster(conn, OPTS, cluster_name):
       num_zones = len(zones)
       i = 0
       my_req_ids = []
+      ambari_req_ids = []
+      master_req_ids = []
       for zone in zones:
         num_slaves_this_zone = get_partition(OPTS.slaves, num_zones, i)
+        ambari_reqs = conn.request_spot_instances(
+            price = OPTS.spot_price,
+            image_id = OPTS.ami,
+            launch_group = "launch-group-%s" % cluster_name,
+            placement = zone,
+            count = 1,
+            key_name = OPTS.key_pair,
+            security_groups = [ambari_group],
+            instance_type = OPTS.master_instance_type,
+            block_device_map = block_map)
+        master_reqs = conn.request_spot_instances(
+            price = OPTS.spot_price,
+            image_id = OPTS.ami,
+            launch_group = "launch-group-%s" % cluster_name,
+            placement = zone,
+            count = 1,
+            key_name = OPTS.key_pair,
+            security_groups = [master_group],
+            instance_type = OPTS.master_instance_type,
+            block_device_map = block_map)
         slave_reqs = conn.request_spot_instances(
             price = OPTS.spot_price,
             image_id = OPTS.ami,
@@ -228,6 +250,8 @@ def launch_cluster(conn, OPTS, cluster_name):
             instance_type = OPTS.instance_type,
             block_device_map = block_map)
         my_req_ids += [req.id for req in slave_reqs]
+        ambari_req_ids += [req.id for req in ambari_reqs]
+        master_req_ids += [req.id for req in master_reqs]
         i += 1
 
       print "Waiting for spot instances to be granted..."
@@ -239,26 +263,40 @@ def launch_cluster(conn, OPTS, cluster_name):
           for r in reqs:
             id_to_req[r.id] = r
           active_instance_ids = []
+          ambari_instance_ids = []
+          master_instance_ids = []
           for i in my_req_ids:
             if i in id_to_req and id_to_req[i].state == "active":
               active_instance_ids.append(id_to_req[i].instance_id)
-          if len(active_instance_ids) == OPTS.slaves:
+          for i in master_req_ids:
+            if i in id_to_req and id_to_req[i].state == "active":
+              master_instance_ids.append(id_to_req[i].instance_id)
+          for i in ambari_req_ids:
+            if i in id_to_req and id_to_req[i].state == "active":
+              ambari_instance_ids.append(id_to_req[i].instance_id)
+          if len(active_instance_ids) == OPTS.slaves and len(master_instance_ids) == 1 and len(ambari_instance_ids) == 1:
             print "All %d slaves granted" % OPTS.slaves
-            reservations = conn.get_all_instances(active_instance_ids)
             slave_nodes = []
-            for r in reservations:
+            master_nodes = []
+            ambari_nodes = []
+            for r in conn.get_all_instances(active_instance_ids):
               slave_nodes += r.instances
+            for r in conn.get_all_instances(master_instance_ids):
+              master_nodes += r.instances
+            for r in conn.get_all_instances(ambari_instance_ids):
+              ambari_nodes += r.instances
             break
           else:
             print "%d of %d slaves granted, waiting longer" % (
               len(active_instance_ids), OPTS.slaves)
-      except:
+      except Exception as e:
+        print e
         print "Canceling spot instance requests"
         conn.cancel_spot_instance_requests(my_req_ids)
         # Log a warning if any of these requests actually launched instances:
-        (master_nodes, slave_nodes) = get_existing_cluster(
+        (master_nodes, slave_nodes, ambari_nodes) = get_existing_cluster(
             conn, OPTS, cluster_name, die_on_error=False)
-        running = len(master_nodes) + len(slave_nodes)
+        running = len(master_nodes) + len(slave_nodes) + len(ambari_nodes)
         if running:
           print >> stderr, ("WARNING: %d instances are still running" % running)
         sys.exit(0)
@@ -283,36 +321,36 @@ def launch_cluster(conn, OPTS, cluster_name):
                                                           zone, slave_res.id)
         i += 1
 
-    # Launch masters
-    master_type = OPTS.master_instance_type
-    if master_type == "":
-      master_type = OPTS.instance_type
-    if OPTS.zone == 'all':
-      OPTS.zone = random.choice(conn.get_all_zones()).name
-    master_res = image.run(key_name = OPTS.key_pair,
-                          security_groups = [master_group],
-                          instance_type = master_type,
-                          placement = OPTS.zone,
-                          min_count = 1,
-                          max_count = 1,
-                          block_device_map = block_map)
-    master_nodes = master_res.instances
-    print "Launched master in %s, regid = %s" % (zone, master_res.id)
+      # Launch masters
+      master_type = OPTS.master_instance_type
+      if master_type == "":
+        master_type = OPTS.instance_type
+      if OPTS.zone == 'all':
+        OPTS.zone = random.choice(conn.get_all_zones()).name
+      master_res = image.run(key_name = OPTS.key_pair,
+                            security_groups = [master_group],
+                            instance_type = master_type,
+                            placement = OPTS.zone,
+                            min_count = 1,
+                            max_count = 1,
+                            block_device_map = block_map)
+      master_nodes = master_res.instances
+      print "Launched master in %s, regid = %s" % (zone, master_res.id)
 
-    ambari_type = OPTS.master_instance_type
-    if ambari_type == "":
-      ambari_type = OPTS.instance_type
-    if OPTS.zone == 'all':
-      OPTS.zone = random.choice(conn.get_all_zones()).name
-    ambari_res = image.run(key_name = OPTS.key_pair,
-                          security_groups = [ambari_group],
-                          instance_type = ambari_type,
-                          placement = OPTS.zone,
-                          min_count = 1,
-                          max_count = 1,
-                          block_device_map = block_map)
-    ambari_nodes = ambari_res.instances
-    print "Launched ambari in %s, regid = %s" % (zone, ambari_res.id)
+      ambari_type = OPTS.master_instance_type
+      if ambari_type == "":
+        ambari_type = OPTS.instance_type
+      if OPTS.zone == 'all':
+        OPTS.zone = random.choice(conn.get_all_zones()).name
+      ambari_res = image.run(key_name = OPTS.key_pair,
+                            security_groups = [ambari_group],
+                            instance_type = ambari_type,
+                            placement = OPTS.zone,
+                            min_count = 1,
+                            max_count = 1,
+                            block_device_map = block_map)
+      ambari_nodes = ambari_res.instances
+      print "Launched ambari in %s, regid = %s" % (zone, ambari_res.id)
 
     # Return all the instances
     return (master_nodes, slave_nodes, ambari_nodes)
