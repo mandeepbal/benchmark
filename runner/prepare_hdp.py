@@ -405,11 +405,11 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
 
   # wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
-  print "Starting All Services..."
-  concurrent_map(start_services, master_nodes + slave_nodes)
-
   print "Setting up ambari node..."
   setup_ambari_master(ambari, OPTS)
+
+  print "Starting All Services..."
+  concurrent_map(start_services, master_nodes + slave_nodes)
 
   args = {
     'runner' : '/Users/ahirreddy/Work/benchmark/spark-0.8.0-incubating/ec2/spark-ec2',
@@ -417,6 +417,8 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
     'idfile' : OPTS.identity_file,
     'cluster' : cluster_name,
   }
+
+  ssh(ambari.public_dns_name, OPTS, "ambari-server start;")
 
   print "Ambari: %s" % ambari.public_dns_name
   print "Master: %s" % master.public_dns_name
@@ -448,10 +450,10 @@ def configure_node(node):
 
 def start_services(node):
   cmd = """
-  mkfs.ext3 -F /dev/sdv;
+  mkfs.ext4 -F /dev/sdv;
   mkdir /hadoop;
   mount /dev/sdv /hadoop;
-  /etc/init.d/ntp start;
+  /etc/init.d/ntpd restart;
   """
 
   return ssh(node.public_dns_name, OPTS, cmd)
