@@ -612,6 +612,8 @@ def main():
   output = StringIO()
   outfile = open('results/%s_%s_%s' % (fname, opts.query_num, datetime.datetime.now()), 'w')
 
+  if not opts.redshift:
+    print >> output, "Contents: \n%s" % str(prettylist(contents))
   print >> output, "=================================="
   print >> output, "Results: %s" % prettylist(results)
   print >> output, "Percentiles: %s" % get_percentiles(results)
