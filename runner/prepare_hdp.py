@@ -64,7 +64,7 @@ def parse_args():
            "slaves across multiple (an additional $0.01/Gb for bandwidth" +
            "between zones applies)")
   parser.add_option("-a", "--ami", help="Amazon Machine Image ID to use",
-                    default="ami-e8084981")
+                    default="ami-a25415cb")
   parser.add_option("-v", "--spark-version", default="0.8.0",
       help="Version of Spark to use: 'X.Y.Z' or a specific git hash")
   parser.add_option("--spark-git-repo", 
@@ -391,9 +391,9 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
   ambari = ambari_nodes[0]
   all_nodes = master_nodes + slave_nodes + ambari_nodes
 
-  ## print "Enabling root on all nodes..."
-  ## OPTS.user = "ec2-user"
-  ## concurrent_map(enable_root, all_nodes)
+  print "Enabling root on all nodes..."
+  OPTS.user = "ec2-user"
+  concurrent_map(enable_root, all_nodes)
 
   OPTS.user = "root"
 
@@ -403,7 +403,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
   print "Configuring Nodes..."
   concurrent_map(configure_node, all_nodes)
 
-  # wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
+  wait_for_cluster(conn, 90, master_nodes, slave_nodes, ambari_nodes)
 
   print "Setting up ambari node..."
   setup_ambari_master(ambari, OPTS)
@@ -443,16 +443,21 @@ def enable_root(node):
 
 def configure_node(node):
   cmd = """
-        zypper -n install git;
+        yum -y install git;
+        sed -e 's/SELINUX=enforcing//g' /etc/selinux/config > /etc/selinux/config;
+        echo "SELINUX=disabled" >> /etc/selinux/config;
+        chkconfig iptables off;
+        chkconfig ip6tables off;
+        shutdown -r now;
         """
 
   ssh(node.public_dns_name, OPTS, cmd)
 
 def start_services(node):
   cmd = """
-  mkfs.ext4 -F /dev/sdv;
+  mkfs.ext4 /dev/xvdz;
   mkdir /hadoop;
-  mount /dev/sdv /hadoop;
+  mount /dev/xvdz /hadoop;
   /etc/init.d/ntpd restart;
   """
 
@@ -470,10 +475,11 @@ def deploy_key(node):
 # with install process
 def setup_ambari_master(ambari, OPTS):
   cmd = """
-        rm ambari.repo;
-        wget http://public-repo-1.hortonworks.com/ambari/suse11/1.x/updates/1.4.1.25/ambari.repo;
-        cp ambari.repo /etc/zypp/repos.d;
-        zypper -n install ambari-server;
+        wget http://public-repo-1.hortonworks.com/ambari/centos6/1.x/updates/1.4.1.25/ambari.repo;
+        cp ambari.repo /etc/yum.repos.d;
+        yum -y install epel-release;
+        yum -y repolist;
+        yum -y install ambari-server;
         ambari-server setup;
         ambari-server start;
         ambari-server status;
