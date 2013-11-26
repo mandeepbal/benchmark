@@ -296,7 +296,7 @@ def prepare_hive_dataset(opts):
     cp_crawl = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/crawl/ " \
                "/tmp/benchmark/crawl/" % (opts.aws_key_id,
                                           opts.aws_key,
-                                          opts.file_format, opts.data_prefix)
+                                          "TEXTFILE", opts.data_prefix)
 
     ssh_hive(cp_rankings, user='hdfs')
     ssh_hive(cp_uservisits, user='hdfs')
@@ -325,7 +325,7 @@ def prepare_hive_dataset(opts):
 
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS documents; " \
-    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS SEQUENCEFILE " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
     "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
