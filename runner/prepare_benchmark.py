@@ -325,8 +325,9 @@ def prepare_hive_dataset(opts):
 
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS documents; " \
-    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS SEQUENCEFILE " \
-    "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
+    "CREATE EXTERNAL TABLE documents (line STRING) " \
+    "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
