@@ -374,7 +374,7 @@ def run_shark_benchmark(opts):
 def run_impala_benchmark(opts):
   impala_host = opts.impala_hosts[0]
   def ssh_impala(command): 
-    ssh(impala_host, "root", opts.impala_identity_file, command)
+    ssh(impala_host, "ubuntu", opts.impala_identity_file, command)
 
   runner = "impala-shell -r -q"
   if (opts.impala_use_hive):
@@ -408,7 +408,7 @@ def run_impala_benchmark(opts):
 
   remote_query_file = "/tmp/%s" % query_file_name
   print >> stderr, "Copying files to Impala"
-  scp_to(impala_host, opts.impala_identity_file, "root", 
+  scp_to(impala_host, opts.impala_identity_file, "ubuntu", 
       local_query_file, remote_query_file)
   ssh_impala("chmod 775 %s" % remote_query_file)
 
@@ -417,13 +417,13 @@ def run_impala_benchmark(opts):
   for i in range(opts.num_trials):
     if opts.clear_buffer_cache:
       for host in opts.impala_hosts:
-        ssh(host, "root", opts.impala_identity_file,
+        ssh(host, "ubuntu", opts.impala_identity_file,
             "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
     ssh_impala("sudo -u hdfs %s" % remote_query_file)
 
   # Collect results
   local_result_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
-  scp_from(impala_host, opts.impala_identity_file, "root", 
+  scp_from(impala_host, opts.impala_identity_file, "ubuntu", 
       remote_result_file, local_result_file) 
   contents = open(local_result_file).readlines()
 

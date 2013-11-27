@@ -226,7 +226,7 @@ def prepare_shark_dataset(opts):
 
 def prepare_impala_dataset(opts):
   def ssh_impala(command): 
-    ssh(opts.impala_host, "root", opts.impala_identity_file, command)
+    ssh(opts.impala_host, "ubuntu", opts.impala_identity_file, command)
 
   if not opts.skip_s3_import:
     print "=== IMPORTING BENCHMARK FROM S3 ==="
@@ -238,9 +238,9 @@ def prepare_impala_dataset(opts):
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/hdfs-site.xml") 
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/core-site.xml") 
 
-    add_aws_credentials(opts.impala_host, "root", opts.impala_identity_file,
+    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
         "/etc/hadoop/conf/hdfs-site.xml", opts.aws_key_id, opts.aws_key)
-    add_aws_credentials(opts.impala_host, "root", opts.impala_identity_file,
+    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
         "/etc/hadoop/conf/core-site.xml", opts.aws_key_id, opts.aws_key)
   
     ssh_impala( 
