@@ -307,7 +307,7 @@ def prepare_hive_dataset(opts):
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
   scp_to(opts.hive_host, opts.hive_identity_file, "root", "udf/url_count.py",
       "/tmp/url_count.py")
-  for slave in opts.hive_slaves.split(","):
+  for slave in opts.hive_slaves.replace('"', '').split(","):
     scp_to(slave, opts.hive_identity_file, "root", "udf/url_count.py",
         "/tmp/url_count.py")
 
