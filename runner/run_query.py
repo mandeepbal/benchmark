@@ -62,6 +62,17 @@ QUERY_4_HQL = """DROP TABLE IF EXISTS url_counts_partial;
                    FROM url_counts_partial GROUP BY destpage;"""
 QUERY_4_HQL = " ".join(QUERY_4_HQL.replace("\n", "").split())
 
+QUERY_4_HQL_HIVE_UDF = """DROP TABLE IF EXISTS url_counts_partial;
+                 CREATE TABLE url_counts_partial AS 
+                   SELECT TRANSFORM (line) 
+                   USING "python /tmp/url_count.py" as (sourcePage, 
+                     destPage, count) from documents;
+                 DROP TABLE IF EXISTS url_counts_total;
+                 CREATE TABLE url_counts_total AS 
+                   SELECT SUM(count) AS totalCount, destpage 
+                   FROM url_counts_partial GROUP BY destpage;"""
+QUERY_4_HQL_HIVE_UDF = " ".join(QUERY_4_HQL_HIVE_UDF.replace("\n", "").split())
+
 QUERY_1_PRE = "CREATE TABLE %s (pageURL STRING, pageRank INT);" % TMP_TABLE
 QUERY_2_PRE = "CREATE TABLE %s (sourceIP STRING, adRevenue DOUBLE);" % TMP_TABLE
 QUERY_3_PRE = "CREATE TABLE %s (sourceIP STRING, " \
@@ -117,7 +128,8 @@ QUERY_MAP = {
                     create_as(QUERY_3b_SQL)),
              '3c': (create_as(QUERY_3c_HQL), insert_into(QUERY_3c_HQL), 
                     create_as(QUERY_3c_SQL)),
-             '4':  (QUERY_4_HQL, None, None)}
+             '4':  (QUERY_4_HQL, None, None),
+             '4_HIVE':  (QUERY_4_HQL_HIVE_UDF, None, None)}
 
 # Turn a given query into a version using cached tables
 def make_input_cached(query):
@@ -489,6 +501,9 @@ def run_hive_benchmark(opts):
 
   if '4' not in opts.query_num:
     query_list += CLEAN_QUERY
+  else:
+    opts.query_num = '4_HIVE'
+
   query_list += QUERY_MAP[opts.query_num][0]
 
   query_list = re.sub("\s\s+", " ", query_list.replace('\n', ' '))
