@@ -389,14 +389,14 @@ def run_shark_benchmark(opts):
 
   return results, contents
 
+def clear_buffer_cache_impala(host):
+  ssh(host, "ubuntu", opts.impala_identity_file,
+      "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
+
 def run_impala_benchmark(opts):
   impala_host = opts.impala_hosts[0]
   def ssh_impala(command): 
     ssh(impala_host, "ubuntu", opts.impala_identity_file, command)
-
-  def clear_buffer_cache_impala(host):
-    ssh(host, "ubuntu", opts.impala_identity_file,
-        "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
 
   runner = "impala-shell -r -q"
   if (opts.impala_use_hive):
@@ -485,15 +485,16 @@ def run_redshift_benchmark(opts):
     cursor.execute(CLEAN_QUERY)
   return times
 
+
+def clear_buffer_cache_hive(host):
+  ssh(host, "root", opts.hive_identity_file,
+      "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
+
 def run_hive_benchmark(opts):
   def ssh_hive(command, user="root"):
     command = 'sudo -u %s %s' % (user, command)
     print command
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
-
-  def clear_buffer_cache_hive(host):
-    ssh(host, "root", opts.hive_identity_file,
-        "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
 
   prefix = str(time.time()).split(".")[0]
   query_file_name = "%s_workload.sh" % prefix
