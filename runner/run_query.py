@@ -173,6 +173,8 @@ def parse_args():
       help="Hostname of Redshift ODBC endpoint")
   parser.add_option("--hive-host",
       help="Hostname of Hive master node")
+  parser.add_option("--hive-slaves",
+      help="Hostnames of Hive slaves (comma seperated)")
 
   parser.add_option("-x", "--impala-identity-file",
       help="SSH private key file to use for logging into Impala node")
@@ -223,6 +225,9 @@ def parse_args():
     hosts = opts.impala_hosts.split(",")
     print >> stderr, "Impala hosts:\n%s" % "\n".join(hosts)
     opts.impala_hosts = hosts
+  if opts.hive:
+    opts.hive_slaves = opts.hive_slaves.split(",")
+    print >> stderr, "Hive slaves:\n%s" % "\n".join(opts.hive_slaves)
 
   if opts.query_num not in QUERY_MAP:
     print >> stderr, "Unknown query number: %s" % opts.query_num
@@ -534,6 +539,10 @@ def run_hive_benchmark(opts):
 
   for i in range(opts.num_trials):
     print "Query %s : Trial %i" % (opts.query_num, i+1)
+    if opts.clear_buffer_cache:
+      for host in opts.hive_slaves:
+        ssh(host, "root", opts.hive_identity_file,
+            "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
     ssh_hive("%s" % remote_query_file)
     local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
     scp_from(opts.hive_host, opts.hive_identity_file, "root",
