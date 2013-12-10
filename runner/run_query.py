@@ -439,7 +439,7 @@ def run_impala_benchmark(opts):
   for i in range(opts.num_trials):
     if opts.clear_buffer_cache:
       print >> stderr, "Clearing Buffer Cache..."
-      parmap(clear_buffer_cache_impala, opts.impala_hosts)
+      parmap(clear_buffer_cache_impala, opts.impala_hosts, 5)
     ssh_impala("sudo -u hdfs %s" % remote_query_file)
 
   # Collect results
@@ -492,6 +492,7 @@ def run_hive_benchmark(opts):
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
 
   def clear_buffer_cache_hive(host):
+    print >> stderr, "Clearing", host
     ssh(host, "root", opts.hive_identity_file,
         "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
 
@@ -549,7 +550,7 @@ def run_hive_benchmark(opts):
     print "Query %s : Trial %i" % (opts.query_num, i+1)
     if opts.clear_buffer_cache:
       print >> stderr, "Clearing Buffer Cache..."
-      parmap(clear_buffer_cache_hive, opts.hive_slaves)
+      parmap(clear_buffer_cache_hive, opts.hive_slaves, 5)
     ssh_hive("%s" % remote_query_file)
     local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
     scp_from(opts.hive_host, opts.hive_identity_file, "root",
