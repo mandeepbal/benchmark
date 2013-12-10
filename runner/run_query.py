@@ -13,7 +13,7 @@ import os
 import time
 import datetime
 import re
-from multiprocessing import Pool
+import multiprocessing
 from StringIO import StringIO
 from pg8000 import DBAPI
 
