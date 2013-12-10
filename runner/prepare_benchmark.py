@@ -249,7 +249,7 @@ def prepare_impala_dataset(opts):
       "HADOOP_USER_NAME=hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
       "/tmp/benchmark/rankings/" % (opts.file_format, opts.data_prefix))
     ssh_impala( 
-      "HADOOP_USER_NAME=hdfs hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+      "HADOOP_USER_NAME=hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
       "/tmp/benchmark/uservisits/" % (opts.file_format, opts.data_prefix))
   
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
