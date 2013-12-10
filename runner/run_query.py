@@ -636,7 +636,10 @@ def main():
   elif opts.redshift:
     fname = "redshift"
   elif opts.hive:
-    fname = "hive"
+    if opts.clear_buffer_cache:
+      fname = "hive_clear_cache"
+    else:
+      fname = "hive"
 
   def prettylist(lst):
     return ",".join([str(k) for k in lst]) 
