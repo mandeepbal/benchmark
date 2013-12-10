@@ -240,7 +240,7 @@ def parse_args():
 def ssh(host, username, identity_file, command):
   return subprocess.check_call(
       "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
-      (identity_file, username, host, command), shell=True, stdin=subprocess.PIPE)
+      (identity_file, username, host, command), shell=True)
 
 # Copy a file to a given host through scp, throwing an exception if scp fails
 def scp_to(host, identity_file, username, local_file, remote_file):
