@@ -13,7 +13,6 @@ import os
 import time
 import datetime
 import re
-from multiprocessing import Pool
 from StringIO import StringIO
 from pg8000 import DBAPI
 
@@ -439,7 +438,7 @@ def run_impala_benchmark(opts):
   for i in range(opts.num_trials):
     if opts.clear_buffer_cache:
       print >> stderr, "Clearing Buffer Cache..."
-      parmap(clear_buffer_cache_impala, opts.impala_hosts)
+      map(clear_buffer_cache_impala, opts.impala_hosts)
     ssh_impala("sudo -u hdfs %s" % remote_query_file)
 
   # Collect results
@@ -549,7 +548,7 @@ def run_hive_benchmark(opts):
     print "Query %s : Trial %i" % (opts.query_num, i+1)
     if opts.clear_buffer_cache:
       print >> stderr, "Clearing Buffer Cache..."
-      parmap(clear_buffer_cache_hive, opts.hive_slaves)
+      map(clear_buffer_cache_hive, opts.hive_slaves)
     ssh_hive("%s" % remote_query_file)
     local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
     scp_from(opts.hive_host, opts.hive_identity_file, "root",
@@ -660,35 +659,6 @@ def main():
 
   output.close()
   outfile.close()
-
-def spawn(f):
-    def fun(q_in,q_out):
-        while True:
-            i,x = q_in.get()
-            if i == None:
-                break
-            q_out.put((i,f(x)))
-    return fun
-
-def parmap(f, X, nprocs = multiprocessing.cpu_count()):
-    q_in   = multiprocessing.Queue(1)
-    q_out  = multiprocessing.Queue()
-
-    proc = [multiprocessing.Process(target=spawn(f),args=(q_in,q_out)) for _ in range(nprocs)]
-    for p in proc:
-        p.daemon = True
-        p.start()
-
-    sent = [q_in.put((i,x)) for i,x in enumerate(X)]
-    [q_in.put((None,None)) for _ in range(nprocs)]
-    res = [q_out.get() for _ in range(len(sent))]
-
-    [p.join() for p in proc]
-
-    return [x for i,x in sorted(res)]
-
-if __name__ == '__main__':
-    print(parmap(lambda i:i*2, [1,2,3,4,6,7,8]))
 
 if __name__ == "__main__":
   main()
