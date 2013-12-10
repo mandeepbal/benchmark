@@ -393,6 +393,10 @@ def run_impala_benchmark(opts):
   def ssh_impala(command): 
     ssh(impala_host, "ubuntu", opts.impala_identity_file, command)
 
+  def clear_buffer_cache_impala(host):
+    ssh(host, "ubuntu", opts.impala_identity_file,
+        "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
+
   runner = "impala-shell -r -q"
   if (opts.impala_use_hive):
     runner = "hive -e"
@@ -433,9 +437,8 @@ def run_impala_benchmark(opts):
   print >> stderr, "Running remote benchmark..."
   for i in range(opts.num_trials):
     if opts.clear_buffer_cache:
-      for host in opts.impala_hosts:
-        ssh(host, "ubuntu", opts.impala_identity_file,
-            "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
+      print >> stderr, "Clearing Buffer Cache..."
+      concurrent_map(clear_buffer_cache_impala, opts.impala_hosts)
     ssh_impala("sudo -u hdfs %s" % remote_query_file)
 
   # Collect results
@@ -486,6 +489,10 @@ def run_hive_benchmark(opts):
     command = 'sudo -u %s %s' % (user, command)
     print command
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+
+  def clear_buffer_cache_hive(host):
+    ssh(host, "root", opts.hive_identity_file,
+        "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
 
   prefix = str(time.time()).split(".")[0]
   query_file_name = "%s_workload.sh" % prefix
@@ -540,9 +547,8 @@ def run_hive_benchmark(opts):
   for i in range(opts.num_trials):
     print "Query %s : Trial %i" % (opts.query_num, i+1)
     if opts.clear_buffer_cache:
-      for host in opts.hive_slaves:
-        ssh(host, "root", opts.hive_identity_file,
-            "sudo bash -c \"sync && echo 3 > /proc/sys/vm/drop_caches\"")
+      print >> stderr, "Clearing Buffer Cache..."
+      concurrent_map(clear_buffer_cache_hive, opts.hive_slaves)
     ssh_hive("%s" % remote_query_file)
     local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
     scp_from(opts.hive_host, opts.hive_identity_file, "root",
@@ -653,6 +659,30 @@ def main():
 
   output.close()
   outfile.close()
+
+def concurrent_map(func, data):
+    """
+    Similar to the bultin function map(). But spawn a thread for each argument
+    and apply `func` concurrently.
+
+    Note: unlike map(), we cannot take an iterable argument. `data` should be an
+    indexable sequence.
+    """
+
+    N = len(data)
+    result = [None] * N
+
+    # wrapper to dispose the result in the right slot
+    def task_wrapper(i):
+        result[i] = func(data[i])
+
+    threads = [threading.Thread(target=task_wrapper, args=(i,)) for i in xrange(N)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    return result
 
 if __name__ == "__main__":
   main()
