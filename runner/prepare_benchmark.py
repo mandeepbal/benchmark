@@ -228,7 +228,7 @@ def prepare_shark_dataset(opts):
 
 def prepare_impala_dataset(opts):
   def ssh_impala(command): 
-    ssh(opts.impala_host, "ubuntu", opts.impala_identity_file, command)
+    ssh(opts.impala_host, "ec2-user", opts.impala_identity_file, command)
 
   if not opts.skip_s3_import:
     print "=== IMPORTING BENCHMARK FROM S3 ==="
@@ -240,28 +240,28 @@ def prepare_impala_dataset(opts):
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/hdfs-site.xml") 
     ssh_impala("sudo chmod 777 /etc/hadoop/conf/core-site.xml") 
 
-    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
+    add_aws_credentials(opts.impala_host, "ec2-user", opts.impala_identity_file,
         "/etc/hadoop/conf/hdfs-site.xml", opts.aws_key_id, opts.aws_key)
-    add_aws_credentials(opts.impala_host, "ubuntu", opts.impala_identity_file,
+    add_aws_credentials(opts.impala_host, "ec2-user", opts.impala_identity_file,
         "/etc/hadoop/conf/core-site.xml", opts.aws_key_id, opts.aws_key)
   
     ssh_impala( 
-      "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
+      "HADOOP_USER_NAME=hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
       "/tmp/benchmark/rankings/" % (opts.file_format, opts.data_prefix))
     ssh_impala( 
-      "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+      "HADOOP_USER_NAME=hdfs hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
       "/tmp/benchmark/uservisits/" % (opts.file_format, opts.data_prefix))
   
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
   ssh_impala(
-    "hive -e \"DROP TABLE IF EXISTS rankings; " \
+    "HADOOP_USER_NAME=hdfs hive -e \"DROP TABLE IF EXISTS rankings; " \
     "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
     "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
     "TERMINATED BY \\\"\\001\\\" " \
     "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/rankings\\\";\"")
  
   ssh_impala(
-    "hive -e \"DROP TABLE IF EXISTS uservisits; " \
+    "HADOOP_USER_NAME=hdfs hive -e \"DROP TABLE IF EXISTS uservisits; " \
     "CREATE EXTERNAL TABLE uservisits (sourceIP STRING, "\
     "destURL STRING," \
     "visitDate STRING,adRevenue DOUBLE,userAgent STRING,countryCode STRING," \
