@@ -36,6 +36,8 @@ def parse_args():
       help="Whether to include Redshift")
   parser.add_option("--hive", action="store_true", default=False,
       help="Whether to include Hive")
+  parser.add_option("--hive-cdh", action="store_true", default=False,
+      help="Hive on CDH cluster")
 
   parser.add_option("-a", "--impala-host",
       help="Hostname of Impala state store node")
@@ -337,6 +339,71 @@ def prepare_hive_dataset(opts):
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
+
+def prepare_hive_cdh_dataset(opts):
+  def ssh_hive(command):
+    command = 'HADOOP_USER_NAME=%s %s' % ("hdfs", command)
+    ssh(opts.hive_host, "ubuntu", opts.hive_identity_file, command)
+
+  if not opts.skip_s3_import:
+    print "=== IMPORTING BENCHMARK FROM S3 ==="
+    try:
+      ssh_hive("hadoop dfs -rmr -skipTrash /tmp/benchmark")
+      ssh_hive("hadoop dfs -rmr -skipTrash .Trash")
+      ssh_hive("hadoop dfs -expunge")
+      ssh_hive("hadoop dfs -mkdir /tmp/benchmark")
+    except Exception:
+      pass # Folder may already exist
+
+    cp_rankings = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/rankings/ " \
+                  "/tmp/benchmark/rankings/" % (opts.aws_key_id,
+                                                opts.aws_key,
+                                                opts.file_format, opts.data_prefix)
+
+    cp_uservisits = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+                    "/tmp/benchmark/uservisits/" % (opts.aws_key_id,
+                                                    opts.aws_key,
+                                                    opts.file_format, opts.data_prefix)
+
+    cp_crawl = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/crawl/ " \
+               "/tmp/benchmark/crawl/" % (opts.aws_key_id,
+                                          opts.aws_key,
+                                          "text", opts.data_prefix)
+
+    ssh_hive(cp_rankings)
+    ssh_hive(cp_uservisits)
+    ssh_hive(cp_crawl)
+
+  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  scp_to(opts.hive_host, opts.hive_identity_file, "ubuntu", "udf/url_count.py",
+      "/tmp/url_count.py")
+  for slave in opts.hive_slaves.replace('"', '').split(","):
+    scp_to(slave, opts.hive_identity_file, "ubuntu", "udf/url_count.py",
+        "/tmp/url_count.py")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS rankings; " \
+    "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/rankings\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS uservisits; " \
+    "CREATE EXTERNAL TABLE uservisits (sourceIP STRING, "\
+    "destURL STRING," \
+    "visitDate STRING,adRevenue DOUBLE,userAgent STRING,countryCode STRING," \
+    "languageCode STRING,searchWord STRING,duration INT ) " \
+    "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS documents; " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
+    "LOCATION \\\"/tmp/benchmark/crawl\\\";\"")
+
+  print "=== FINISHED CREATING BENCHMARK DATA ==="
+
 def prepare_redshift_dataset(opts):
   def query_and_print(cursor, query):
     cursor.execute(query)
@@ -426,6 +493,8 @@ def main():
     prepare_redshift_dataset(opts)
   if opts.hive:
     prepare_hive_dataset(opts)
+  if opts.hive_cdh:
+    prepare_hive_cdh_dataset(opts)
 
 if __name__ == "__main__":
   main()
