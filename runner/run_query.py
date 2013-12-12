@@ -641,7 +641,7 @@ def main():
       fname = "hive_clear_cache"
     else:
       fname = "hive"
-  fname = opt.prefix + fname
+  fname = opts.prefix + fname
 
   def prettylist(lst):
     return ",".join([str(k) for k in lst]) 
