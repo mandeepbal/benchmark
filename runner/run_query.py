@@ -191,7 +191,8 @@ def parse_args():
       help="Database to use in Redshift")
   parser.add_option("--num-trials", type="int", default=10,
       help="Number of trials to run for this query")
-
+  parser.add_option("--prefix", type="string", default="",
+      help="Prefix result files with this string")
 
   parser.add_option("-q", "--query-num", default="1a",
                     help="Which query to run in benchmark: " \
@@ -640,6 +641,7 @@ def main():
       fname = "hive_clear_cache"
     else:
       fname = "hive"
+  fname = opt.prefix + fname
 
   def prettylist(lst):
     return ",".join([str(k) for k in lst]) 
