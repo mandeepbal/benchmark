@@ -604,9 +604,9 @@ def run_hive_cdh_benchmark(opts):
   local_query_file = os.path.join(LOCAL_TMP_DIR, query_file_name)
   local_slaves_file = os.path.join(LOCAL_TMP_DIR, slaves_file_name)
   query_file = open(local_query_file, 'w')
-  remote_result_file = "/mnt/%s_results" % prefix
-  remote_tmp_file = "/mnt/%s_out" % prefix
-  remote_query_file = "/mnt/%s" % query_file_name
+  remote_result_file = "/tmp/%s_results" % prefix
+  remote_tmp_file = "/tmp/%s_out" % prefix
+  remote_query_file = "/tmp/%s" % query_file_name
 
   runner = "hive"
 
@@ -656,7 +656,7 @@ def run_hive_cdh_benchmark(opts):
     ssh_hive("%s" % remote_query_file)
     local_results_file = os.path.join(LOCAL_TMP_DIR, "%s_results" % prefix)
     scp_from(opts.hive_host, opts.hive_identity_file, "ubuntu",
-        "/mnt/%s_results" % prefix, local_results_file)
+        "/tmp/%s_results" % prefix, local_results_file)
     content = open(local_results_file).readlines()
     all_times = map(lambda x: float(x.split(": ")[1].split(" ")[0]), content)
 
@@ -678,7 +678,7 @@ def run_hive_cdh_benchmark(opts):
     # Clean-up
     #ssh_hive("rm /mnt/%s*" % prefix)
     print "Clean Up...."
-    ssh_hive("rm /mnt/%s_results" % prefix)
+    ssh_hive("rm /tmp/%s_results" % prefix)
     os.remove(local_results_file)
 
   os.remove(local_query_file)
