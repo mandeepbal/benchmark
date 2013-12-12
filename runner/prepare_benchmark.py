@@ -79,7 +79,7 @@ def parse_args():
 
   (opts, args) = parser.parse_args()
 
-  if not (opts.impala or opts.shark or opts.redshift or opts.hive):
+  if not (opts.impala or opts.shark or opts.redshift or opts.hive or opts.hive_cdh):
     parser.print_help()
     sys.exit(1)
 
