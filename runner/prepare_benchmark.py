@@ -36,6 +36,8 @@ def parse_args():
       help="Whether to include Redshift")
   parser.add_option("--hive", action="store_true", default=False,
       help="Whether to include Hive")
+  parser.add_option("--hive-tez", action="store_true", default=False,
+      help="Whether to include Hive")
   parser.add_option("--hive-cdh", action="store_true", default=False,
       help="Hive on CDH cluster")
 
@@ -79,7 +81,7 @@ def parse_args():
 
   (opts, args) = parser.parse_args()
 
-  if not (opts.impala or opts.shark or opts.redshift or opts.hive or opts.hive_cdh):
+  if not (opts.impala or opts.shark or opts.redshift or opts.hive or opts.hive_tez or opts.hive_cdh):
     parser.print_help()
     sys.exit(1)
 
@@ -339,6 +341,17 @@ def prepare_hive_dataset(opts):
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
+def prepare_tez(opts):
+  def ssh_hive(command, user="root"):
+    command = 'sudo -u %s %s' % (user, command)
+    ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+
+  ssh_hive("
+           yum install -y git;
+           git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
+           cd tez-autobuild;
+           make dist install;
+           ")
 
 def prepare_hive_cdh_dataset(opts):
   def ssh_hive(command):
@@ -493,6 +506,8 @@ def main():
     prepare_redshift_dataset(opts)
   if opts.hive:
     prepare_hive_dataset(opts)
+  if opts.hive_tez:
+    prepare_tez(opts)
   if opts.hive_cdh:
     prepare_hive_cdh_dataset(opts)
 
