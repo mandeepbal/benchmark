@@ -156,6 +156,8 @@ def parse_args():
       help="Whether to include Redshift")
   parser.add_option("--hive", action="store_true", default=False,
       help="Whether to include Hive")
+  parser.add_option("--tez", action="store_true", default=False,
+      help="Use in conjunction with --hive")
   parser.add_option("--hive-cdh", action="store_true", default=False,
       help="Hive on CDH cluster")
 
@@ -509,7 +511,10 @@ def run_hive_benchmark(opts):
   remote_tmp_file = "/mnt/%s_out" % prefix
   remote_query_file = "/mnt/%s" % query_file_name
 
-  runner = "sudo -u hdfs hive"
+  if opts.tez:
+    runner = "HADOOP_USER_NAME=hdfs /opt/hive/bin/hive"
+  else:
+    runner = "sudo -u hdfs hive"
 
   query_list = "set mapred.reduce.tasks = %s;" % opts.reduce_tasks
 
