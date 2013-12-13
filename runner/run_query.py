@@ -112,9 +112,9 @@ IMPALA_MAP = {'1a': QUERY_1_PRE, '1b': QUERY_1_PRE, '1c': QUERY_1_PRE,
               '2a': QUERY_2_PRE, '2b': QUERY_2_PRE, '2c': QUERY_2_PRE,
               '3a': QUERY_3_PRE, '3b': QUERY_3_PRE, '3c': QUERY_3_PRE}
 
-TEZ_MAP =    {'1a':tuple(count(QUERY_1a_HQL)), '1b':tuple(count(QUERY_1b_HQL)), '1c': tuple(count(QUERY_1c_HQL)),
-              '2a':tuple(count(QUERY_2a_HQL)), '2b':tuple(count(QUERY_2b_HQL)), '2c': tuple(count(QUERY_2c_HQL)),
-              '3a':tuple(count(QUERY_3a_HQL)), '3b':tuple(count(QUERY_3b_HQL)), '3c': tuple(count(QUERY_3c_HQL))}
+TEZ_MAP =    {'1a':(count(QUERY_1a_HQL),), '1b':(count(QUERY_1b_HQL),), '1c': (count(QUERY_1c_HQL),),
+              '2a':(count(QUERY_2a_HQL),), '2b':(count(QUERY_2b_HQL),), '2c': (count(QUERY_2c_HQL),),
+              '3a':(count(QUERY_3a_HQL),), '3b':(count(QUERY_3b_HQL),), '3c': (count(QUERY_3c_HQL),)}
 
 QUERY_MAP = {
              '1a':  (create_as(QUERY_1a_HQL), insert_into(QUERY_1a_HQL), 
