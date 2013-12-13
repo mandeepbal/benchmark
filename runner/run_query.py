@@ -110,6 +110,10 @@ IMPALA_MAP = {'1a': QUERY_1_PRE, '1b': QUERY_1_PRE, '1c': QUERY_1_PRE,
               '2a': QUERY_2_PRE, '2b': QUERY_2_PRE, '2c': QUERY_2_PRE,
               '3a': QUERY_3_PRE, '3b': QUERY_3_PRE, '3c': QUERY_3_PRE}
 
+TEZ_MAP =    {'1a': QUERY_1_HQL, '1b': QUERY_1_HQL, '1c': QUERY_1_HQL,
+              '2a': QUERY_2_HQL, '2b': QUERY_2_HQL, '2c': QUERY_2_HQL,
+              '3a': QUERY_3_HQL, '3b': QUERY_3_HQL, '3c': QUERY_3_HQL}
+
 QUERY_MAP = {
              '1a':  (create_as(QUERY_1a_HQL), insert_into(QUERY_1a_HQL), 
                      create_as(QUERY_1a_SQL)),
@@ -513,6 +517,7 @@ def run_hive_benchmark(opts):
 
   if opts.tez:
     runner = "HADOOP_USER_NAME=hdfs /opt/hive/bin/hive"
+    QUERY_MAP = TEZ_MAP
   else:
     runner = "sudo -u hdfs hive"
 
