@@ -519,9 +519,10 @@ def run_hive_benchmark(opts):
 
   if opts.tez:
     runner = "HADOOP_USER_NAME=hdfs /opt/hive/bin/hive"
-    QUERY_MAP = TEZ_MAP
+    query_map = TEZ_MAP
   else:
     runner = "sudo -u hdfs hive"
+    query_map = QUERY_MAP
 
   query_list = "set mapred.reduce.tasks = %s;" % opts.reduce_tasks
 
@@ -533,7 +534,7 @@ def run_hive_benchmark(opts):
   else:
     opts.query_num = '4_HIVE'
 
-  query_list += QUERY_MAP[opts.query_num][0]
+  query_list += query_map[opts.query_num][0]
 
   query_list = re.sub("\s\s+", " ", query_list.replace('\n', ' '))
 
