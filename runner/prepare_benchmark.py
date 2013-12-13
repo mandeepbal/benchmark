@@ -346,12 +346,12 @@ def prepare_tez(opts):
     command = 'sudo -u %s %s' % (user, command)
     ssh(opts.hive_host, "root", opts.hive_identity_file, command)
 
-  ssh_hive("
+  ssh_hive("""
            yum install -y git;
            git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
            cd tez-autobuild;
            make dist install;
-           ")
+           """)
 
 def prepare_hive_cdh_dataset(opts):
   def ssh_hive(command):
