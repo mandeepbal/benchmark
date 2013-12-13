@@ -342,16 +342,14 @@ def prepare_hive_dataset(opts):
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
 def prepare_tez(opts):
-  def ssh_hive(command, user="root"):
-    command = 'sudo -u %s %s' % (user, command)
-    ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+  cmd = """
+  yum install -y git;
+  git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
+  cd tez-autobuild;
+  JAVA_HOME="/usr/jdk64/jdk1.6.0_31" make dist install;
+  """
 
-  ssh_hive("""
-           yum install -y git;
-           git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
-           cd tez-autobuild;
-           make dist install;
-           """)
+  ssh(opts.hive_host, "root", opts.hive_identity_file, cmd)
 
 def prepare_hive_cdh_dataset(opts):
   def ssh_hive(command):
