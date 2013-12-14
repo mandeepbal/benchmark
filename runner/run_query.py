@@ -520,7 +520,8 @@ def run_hive_benchmark(opts):
 
   if opts.tez:
     runner = "HADOOP_USER_NAME=hdfs /opt/hive/bin/hive"
-    query_map = TEZ_MAP
+    #query_map = TEZ_MAP
+    query_map = QUERY_MAP
   else:
     runner = "sudo -u hdfs hive"
     query_map = QUERY_MAP
