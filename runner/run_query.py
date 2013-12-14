@@ -106,6 +106,7 @@ def create_as(query):
 def insert_into(query):
   return "INSERT INTO TABLE %s %s;" % (TMP_TABLE, query)
 def count(query):
+  return query
   return "SELECT COUNT(*) FROM (%s) q;" % query
 
 IMPALA_MAP = {'1a': QUERY_1_PRE, '1b': QUERY_1_PRE, '1c': QUERY_1_PRE,
@@ -524,7 +525,7 @@ def run_hive_benchmark(opts):
     runner = "sudo -u hdfs hive"
     query_map = QUERY_MAP
 
-  query_list = "set mapred.reduce.tasks = %s;" % opts.reduce_tasks
+  query_list = "set mapreduce.reduce.input.limit = -1; set mapred.reduce.tasks = %s;" % opts.reduce_tasks
 
   # Throw away query for JVM warmup
   # query_list += "SELECT COUNT(*) FROM scratch;"
