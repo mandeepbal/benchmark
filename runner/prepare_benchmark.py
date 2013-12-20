@@ -342,12 +342,38 @@ def prepare_hive_dataset(opts):
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
 def prepare_tez(opts):
-  cmd = """
+  old_cmd = """
   yum install -y git;
   git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
   cd tez-autobuild;
   JAVA_HOME="/usr/jdk64/jdk1.6.0_31" make dist install;
   """
+
+  cmd = """
+  wget https://github.com/cartershanklin/StingerQuickstart/blob/master/Stinger-Preview-Quickstart.tgz?raw=true
+  tar -xzf Stinger-Preview-Quickstart.tgz
+  cd Stinger-Preview-Quickstart
+
+  wget http://public-repo-1.hortonworks.com/HDP-2.1.0.0/repos/centos6/tars/tez-0.2.0.2.1.0.0-92.tar.gz
+  tar -C /opt -xzf tez-0.2.0.2.1.0.0-92.tar.gz
+
+  HADOOP_USER_NAME=hdfs hadoop fs -mkdir -p /apps/tez
+  HADOOP_USER_NAME=hdfs hadoop fs -chmod 755 /apps/tez
+
+  HADOOP_USER_NAME=hdfs hadoop fs -copyFromLocal /opt/tez-0.2.0.2.1.0.0-92/* /apps/tez/
+
+  cp configs/tez-site.xml.physical /etc/hadoop/conf/tez-site.xml
+
+  wget http://public-repo-1.hortonworks.com/HDP-2.1.0.0/repos/centos6/tars/apache-hive-0.13.0.2.1.0.0-92-bin.tar.gz
+  tar -C /opt -xzf apache-hive-0.13.0.2.1.0.0-92-bin.tar.gz
+  HADOOP_USER_NAME=hive hadoop fs -mkdir -p /user/hive
+  HADOOP_USER_NAME=hive hadoop fs -chmod 755 /user/hive
+  HADOOP_USER_NAME=hive hadoop fs -put /opt/apache-hive-0.13.0.2.1.0.0-92-bin/lib/hive-exec-*.jar /user/hive/hive-exec-0.13.0-SNAPSHOT.jar
+
+  cp /etc/hive/conf.server/hive-site.xml /opt/apache-hive-0.13.0.2.1.0.0-92-bin/conf/hive-site.xml
+  """
+
+  print cmd
 
   ssh(opts.hive_host, "root", opts.hive_identity_file, cmd)
 
