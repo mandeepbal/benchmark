@@ -371,6 +371,9 @@ def prepare_tez(opts):
   HADOOP_USER_NAME=hive hadoop fs -put /opt/apache-hive-0.13.0.2.1.0.0-92-bin/lib/hive-exec-*.jar /user/hive/hive-exec-0.13.0-SNAPSHOT.jar
 
   cp /etc/hive/conf.server/hive-site.xml /opt/apache-hive-0.13.0.2.1.0.0-92-bin/conf/hive-site.xml
+
+  wget http://private-repo-1.hortonworks.com/HDP-2.1.0.0/repos/centos6/hdp.repo -O /etc/yum.repos.d/stinger.repo
+  yum upgrade hadoop-yarn-resourcemanager
   """
 
   print cmd
