@@ -115,4 +115,14 @@
     <value>100</value>
   </property>
 
+  <property>
+    <name>tez.session.pre-warm.enabled</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>tez.session.pre-warm.num.containers</name>
+    <value>70</value>
+  </property>
+
 </configuration>
