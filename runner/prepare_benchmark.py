@@ -315,7 +315,7 @@ def prepare_hive_dataset(opts):
     scp_to(slave, opts.hive_identity_file, "root", "udf/url_count.py",
         "/tmp/url_count.py")
 
-  cp_scratch = "hadoop dfs -cp /tmp/benchmark/rankings /tmp/benchmark/scratch"
+  cp_scratch = "hadoop dfs -cp /tmp/benchmark/rankings/* /tmp/benchmark/scratch"
   ssh_hive(cp_scratch, user='hdfs')
 
   ssh_hive(
