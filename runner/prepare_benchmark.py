@@ -304,22 +304,19 @@ def prepare_hive_dataset(opts):
                                           opts.aws_key,
                                           "text", opts.data_prefix)
 
-    cp_scratch = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/rankings/ " \
-                  "/tmp/benchmark/scratch/" % (opts.aws_key_id,
-                                                opts.aws_key,
-                                                opts.file_format, opts.data_prefix)
-
     ssh_hive(cp_rankings, user='hdfs')
     ssh_hive(cp_uservisits, user='hdfs')
     ssh_hive(cp_crawl, user='hdfs')
-    ssh_hive(cp_scratch, user='hdfs')
 
-  print "=== slkdjfCREATING HIVE TABLES FOR BENCHMARK ==="
+  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
   scp_to(opts.hive_host, opts.hive_identity_file, "root", "udf/url_count.py",
       "/tmp/url_count.py")
   for slave in opts.hive_slaves.replace('"', '').split(","):
     scp_to(slave, opts.hive_identity_file, "root", "udf/url_count.py",
         "/tmp/url_count.py")
+
+  cp_scratch = "hadoop dfs -cp -r /tmp/benchmark/rankings /tmp/benchmark/scratch/"
+  ssh_hive(cp_scratch, user='hdfs')
 
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS rankings; " \
@@ -345,7 +342,6 @@ def prepare_hive_dataset(opts):
     "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
-  print "Creating Scratch"
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS scratch; " \
     "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
