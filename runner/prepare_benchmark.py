@@ -314,7 +314,7 @@ def prepare_hive_dataset(opts):
     ssh_hive(cp_crawl, user='hdfs')
     ssh_hive(cp_scratch, user='hdfs')
 
-  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  print "=== slkdjfCREATING HIVE TABLES FOR BENCHMARK ==="
   scp_to(opts.hive_host, opts.hive_identity_file, "root", "udf/url_count.py",
       "/tmp/url_count.py")
   for slave in opts.hive_slaves.replace('"', '').split(","):
