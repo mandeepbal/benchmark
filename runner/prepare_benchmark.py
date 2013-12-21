@@ -345,6 +345,7 @@ def prepare_hive_dataset(opts):
     "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
   user="hdfs")
 
+  print "Creating Scratch"
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS scratch; " \
     "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
