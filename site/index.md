@@ -3,18 +3,29 @@ title: Big Data Benchmark
 layout: default
 ---
 
-_**Here from HackerNews? This was originally posted several months ago. Check back in two weeks for an updated benchmark including newer versions of Hive, Impala, and Shark.**_  
-
 <!-- This is an open source benchmark which compares the performance of several large scale data-processing frameworks. -->
+
+<script>
+  var redshift = [[2.82], [3.03], [10.50], [28.03], [63.92], [87.74], [34.66], [48.85], [198.96]];
+  var impala_disk = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72]];
+  var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96]];
+  var shark_disk = [[16.33],[15.68],[38.77],[224.59],[239.14],[283.33],[233.97],[262.35],[747.05],[381.77]];
+  var shark_mem = [[1.68],[1.73],[3.58],[89.93],[103.12],[193.23],[112.06],[168.68],[897.66],[186.35]];
+  var hive = [[59.87],[68.51],[60.12],[726.04],[744.59],[790.09],[555.03],[694.82],[2040.43],[962.84]];
+  var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1,361.90],[966.18]];
+
+  var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.12", "tez"];
+</script>
 
 <h2 id="introduction">Introduction</h2>
 
-Several analytic frameworks have been announced in the last six months. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
+Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
 * [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. 
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.10, 1/2013 *Note: Hive [v0.11](http://hortonworks.com/blog/apache-hive-0-11-stinger-phase-1-delivered/), which advertises improved performance, was recently released but is not yet included*)
 * [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8 preview, 5/2013)
 * [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible<a href="#discussion">*</a> SQL engine with its own MPP-like execution engine. (v1.0, 4/2013)
+* [Stinger/Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview) - Tez is a next generation Hadoop execution engine currently in development (v0.2.0, 12/2013)
 
 This remains a  _**work in progress**_ and will evolve to include additional frameworks and new capabilities. We welcome <a href="#contributions">contributions</a>.
 
@@ -144,9 +155,9 @@ For Impala, Hive, and Shark, this benchmark uses the m2.4xlarge EC2 instance typ
 </div>
 
 
-<h3 id="results"> Results | May 2013</h3>
+<h3 id="results"> Results | December 2013</h3>
 
-We launch EC2 clusters and run each query several times. We report the median response time here. Except for Redshift, all data is stored on HDFS in compressed SequenceFile format using CDH 4.2.0. Each query is run with six frameworks:
+We launch EC2 clusters and run each query several times. We report the median response time here. Except for Redshift, all data is stored on HDFS in compressed SequenceFile format. Each query is run with seven frameworks:
 
 <table class="table tight_rows" markdown="1">
 
@@ -155,7 +166,8 @@ We launch EC2 clusters and run each query several times. We report the median re
 <tr><td>__Impala - disk__</td><td>Input and output tables are on-disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
 <tr><td>__Shark - mem__</td><td>Input tables are stored in Spark cache. Output tables are stored in Spark cache.</td></tr>
 <tr><td>__Impala - mem__</td><td>Input tables are coerced into the OS buffer cache. Output tables are on disk (Impala has no notion of a cached table).</td></tr>
-<tr><td>__Hive__</td><td>Hive with default options. Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td>__Hive__</td><td>Hive on HDP 2.0.6 with default options. Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td>__Tez__</td><td>Tez with the configuration parameters specified [here](http://public-repo-1.hortonworks.com/HDP-LABS/Projects/Stinger/StingerTechnicalPreviewInstall.pdf). Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
 </table>
 
 <h4 id="query1">1. Scan Query </h4>
@@ -175,23 +187,23 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
     <th></th>
     <th>
       <script type="text/javascript">
-        var one_a_data = [[2.43], [9.86], [0.75], [11.79], [1.07], [45.08]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(one_a_data, labels);
+        index = 0;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var one_b_data = [[2.49], [11.95], [4.48], [11.85], [1.08], [63.30]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(one_b_data, labels);
+        index = 1;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var one_c_data = [[12.15], [103.97], [108.19], [24.91], [3.52], [69.70]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(one_c_data, labels);
+        index = 2;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
   </tr>
@@ -226,23 +238,23 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
     <th></th>
     <th>
       <script type="text/javascript">
-        var two_a_data = [[27.69], [130.0], [121.3], [210.10], [111.29], [466.62]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(two_a_data, labels);
+        index = 3;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var two_b_data = [[64.90], [215.67], [208.82], [238.02], [140.73], [490.47]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(two_b_data, labels);
+        index = 4;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var two_c_data = [[91.54], [564.93], [557.29], [278.54], [156.133], [552.01]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(two_c_data, labels);
+        index = 5;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
   </tr>
@@ -285,23 +297,23 @@ FROM
     <th></th>
     <th>
       <script type="text/javascript">
-        var three_a_data = [[42.12], [158.38], [74.32], [253.22], [130.34], [423.20]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(three_a_data, labels);
+        index = 6;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var three_b_data = [[46.75], [168.15], [90.3], [277.23], [171.94], [638.42]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(three_b_data, labels);
+        index = 7;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var three_c_data = [[199.74], [345.18], [337.84], [537.80], [447.30], [1822.44]]
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(three_c_data, labels);
+        index = 8;
+        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
   </tr>
@@ -344,22 +356,20 @@ CREATE TABLE url_counts_total AS
     <th>
       <script type="text/javascript">
         var four_1_data = [[0], [0], [0], [582.95], [155.88], [659.08]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
         make_graph(four_1_data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         var four_2_data = [[0], [0], [0], [132.72], [33.80], [358.38]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
         make_graph(four_2_data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var four_t_data = [[0], [0], [0], [715.66], [188.67], [1017.46]];
-        var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10"];
-        make_graph(four_t_data, labels);
+        index = 9;
+        var data = [[0], [0], [0], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        make_graph(data, labels);
       </script>
     </th>
   </tr>
