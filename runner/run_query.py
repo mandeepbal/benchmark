@@ -528,7 +528,7 @@ def run_hive_benchmark(opts):
     #query_map = TEZ_MAP
     query_map = QUERY_MAP
   else:
-    runner = "HADOOP_USER_NAME=hdfs hive -i /root/benchmark/runner/tez/Stinger-Preview-Quickstart/configs/stinger.settings"
+    runner = "HADOOP_USER_NAME=hdfs hive"
     query_map = QUERY_MAP
 
   # Throw away query for JVM warmup
