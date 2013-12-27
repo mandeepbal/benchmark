@@ -430,6 +430,11 @@ def prepare_hive_cdh_dataset(opts):
     scp_to(slave, opts.hive_identity_file, "ubuntu", "udf/url_count.py",
         "/tmp/url_count.py")
 
+  mkdir = "hadoop dfs -mkdir /tmp/benchmark/scratch"
+  cp_scratch = "hadoop dfs -cp /tmp/benchmark/rankings/* /tmp/benchmark/scratch"
+  ssh_hive(mkdir)
+  ssh_hive(cp_scratch)
+
   ssh_hive(
     "hive -e \"DROP TABLE IF EXISTS rankings; " \
     "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
@@ -450,6 +455,14 @@ def prepare_hive_cdh_dataset(opts):
     "hive -e \"DROP TABLE IF EXISTS documents; " \
     "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
     "LOCATION \\\"/tmp/benchmark/crawl\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS scratch; " \
+    "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"",
+  user="hdfs")
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 

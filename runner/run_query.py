@@ -629,6 +629,8 @@ def run_hive_cdh_benchmark(opts):
   runner = "hive"
 
   query_list = "set mapred.reduce.tasks = %s;" % opts.reduce_tasks
+  query_list += "DROP TABLE IF EXISTS scratch_rank;"
+  query_list += "CREATE TABLE scratch_rank AS SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1000;"
 
   # Throw away query for JVM warmup
   # query_list += "SELECT COUNT(*) FROM scratch;"
