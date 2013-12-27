@@ -461,8 +461,7 @@ def prepare_hive_cdh_dataset(opts):
     "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
     "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
     "TERMINATED BY \\\"\\001\\\" " \
-    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"",
-  user="hdfs")
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"")
 
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
