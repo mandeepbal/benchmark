@@ -730,7 +730,9 @@ def ensure_spark_stopped_on_slaves(slaves):
     print ret_vals
     if 0 in ret_vals:
       print "Spark is still running on some slaves... sleeping"
-      time.sleep(10)
+      cmd = "jps | grep ExecutorBackend | cut -d ' ' -f 1 | xargs -rn1 kill"
+      map(lambda s: ssh_ret_code(s, "root", opts.shark_identity_file, cmd), slaves)
+      time.sleep(2)
     else:
       stop = True
 
