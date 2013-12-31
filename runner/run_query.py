@@ -251,7 +251,7 @@ def run_shark_benchmark(opts):
   remote_tmp_file = "/mnt/%s_out" % prefix
   remote_query_file = "/mnt/%s" % query_file_name
 
-  runner = "/root/shark-0.2/bin/shark-withinfo"
+  runner = "/root/shark/bin/shark-withinfo"
   
   # Two modes here: If using Shark disk or Hive, clear buffer cache in-between
   # each query. If using Shark in memory, send one large query manifest. This saves
@@ -284,7 +284,7 @@ def run_shark_benchmark(opts):
     print "Running remote benchmark..."
     for i in range(opts.num_trials):
       if opts.clear_buffer_cache:
-        ssh_shark("python /root/shark-0.2/bin/dev/clear-buffer-cache.py")
+        ssh_shark("python /root/shark/bin/dev/clear-buffer-cache.py")
       ssh_shark("%s" % remote_query_file)
   else:
     query_list = "DROP TABLE IF EXISTS uservisits_cached;" \
