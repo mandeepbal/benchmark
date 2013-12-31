@@ -257,6 +257,7 @@ def run_shark_benchmark(opts):
            "/root/spark-ec2/slaves", local_slaves_file)
   slaves = map(str.strip, open(local_slaves_file).readlines())
 
+  link_java(slaves, opts)
   ensure_spark_stopped_on_slaves(slaves, opts)
 
   print "Restarting standalone scheduler..."
@@ -490,6 +491,12 @@ def ensure_spark_stopped_on_slaves(slaves, opts):
       time.sleep(2)
     else:
       stop = True
+
+def link_java(slaves, opts):
+  print "Linking Java"
+  cmd = "cd /bin; ln -s /usr/bin/java java"
+  ret_vals = map(lambda s: ssh_ret_code(s, "root", opts.shark_identity_file, cmd), slaves)
+  print ret_vals
 
 def main():
   opts = parse_args()
