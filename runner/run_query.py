@@ -257,7 +257,7 @@ def run_shark_benchmark(opts):
            "/root/spark-ec2/slaves", local_slaves_file)
   slaves = map(str.strip, open(local_slaves_file).readlines())
 
-  ensure_spark_stopped_on_slaves(slaves)
+  ensure_spark_stopped_on_slaves(slaves, opts)
 
   print "Restarting standalone scheduler..."
   ssh_shark("/root/spark/bin/stop-all.sh")
@@ -299,7 +299,7 @@ def run_shark_benchmark(opts):
     print "Running remote benchmark..."
     for i in range(opts.num_trials):
       if opts.clear_buffer_cache:
-        ensure_spark_stopped_on_slaves(slaves)
+        ensure_spark_stopped_on_slaves(slaves, opts)
         ssh_shark("python /root/shark/bin/dev/clear-buffer-cache.py")
       ssh_shark("%s" % remote_query_file)
   else:
@@ -476,7 +476,7 @@ def get_percentiles(in_list):
     get_pctl(in_list, .95)
   )
 
-def ensure_spark_stopped_on_slaves(slaves):
+def ensure_spark_stopped_on_slaves(slaves, opts):
   print "Killing Executors"
   stop = False
   while not stop:
