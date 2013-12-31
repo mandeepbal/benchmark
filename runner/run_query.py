@@ -236,6 +236,13 @@ def run_shark_benchmark(opts):
   def ssh_shark(command):
     ssh(opts.shark_host, "root", opts.shark_identity_file, command)
 
+  prefix = str(time.time()).split(".")[0]
+  query_file_name = "%s_workload.sh" % prefix
+  local_query_file = os.path.join(LOCAL_TMP_DIR, query_file_name)
+  query_file = open(local_query_file, 'w')
+  remote_result_file = "/mnt/%s_results" % prefix
+  remote_tmp_file = "/mnt/%s_out" % prefix
+  remote_query_file = "/mnt/%s" % query_file_name
   slaves_file_name = "%s_slaves" % prefix
   local_slaves_file = os.path.join(LOCAL_TMP_DIR, slaves_file_name)
 
@@ -252,14 +259,6 @@ def run_shark_benchmark(opts):
   ssh_shark("/root/spark/bin/stop-all.sh")
   ssh_shark("/root/spark/bin/start-all.sh")
   time.sleep(10)
-
-  prefix = str(time.time()).split(".")[0]
-  query_file_name = "%s_workload.sh" % prefix
-  local_query_file = os.path.join(LOCAL_TMP_DIR, query_file_name)
-  query_file = open(local_query_file, 'w')
-  remote_result_file = "/mnt/%s_results" % prefix
-  remote_tmp_file = "/mnt/%s_out" % prefix
-  remote_query_file = "/mnt/%s" % query_file_name
 
   runner = "/root/shark/bin/shark-withinfo"
   
