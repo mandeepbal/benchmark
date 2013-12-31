@@ -216,9 +216,15 @@ def parse_args():
 
 # Run a command on a host through ssh, throwing an exception if ssh fails
 def ssh(host, username, identity_file, command):
-  subprocess.check_call(
+  return subprocess.check_call(
       "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
       (identity_file, username, host, command), shell=True)
+
+def ssh_ret_code(host, user, id_file, cmd):
+  try:
+    return ssh(host, user, id_file, cmd)
+  except subprocess.CalledProcessError as e:
+    return e.returncode
 
 # Copy a file to a given host through scp, throwing an exception if scp fails
 def scp_to(host, identity_file, username, local_file, remote_file):
