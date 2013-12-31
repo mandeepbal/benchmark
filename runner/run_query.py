@@ -236,6 +236,13 @@ def run_shark_benchmark(opts):
   def ssh_shark(command):
     ssh(opts.shark_host, "root", opts.shark_identity_file, command)
 
+  print "Getting Slave List"
+  scp_from(opts.shark_host, opts.shark_identity_file, "root",
+           "/root/spark-ec2/slaves", local_slaves_file)
+  slaves = map(str.strip, open(local_slaves_file).readlines())
+
+  ensure_spark_stopped_on_slaves(slaves)
+
   print "Restarting standalone scheduler..."
   ssh_shark("/root/spark/bin/stop-all.sh")
   time.sleep(30)
@@ -462,6 +469,7 @@ def get_percentiles(in_list):
   )
 
 def ensure_spark_stopped_on_slaves(slaves):
+  print "Killing Executors"
   stop = False
   while not stop:
     cmd = "jps | grep ExecutorBackend"
