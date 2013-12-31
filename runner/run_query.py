@@ -253,6 +253,8 @@ def run_shark_benchmark(opts):
   prefix = str(time.time()).split(".")[0]
   query_file_name = "%s_workload.sh" % prefix
   local_query_file = os.path.join(LOCAL_TMP_DIR, query_file_name)
+  slaves_file_name = "%s_slaves" % prefix
+  local_slaves_file = os.path.join(LOCAL_TMP_DIR, slaves_file_name)
   query_file = open(local_query_file, 'w')
   remote_result_file = "/mnt/%s_results" % prefix
   remote_tmp_file = "/mnt/%s_out" % prefix
