@@ -306,8 +306,6 @@ def run_shark_benchmark(opts):
 
   # Throw away query for JVM warmup
   query_list += "SELECT COUNT(*) FROM scratch;"
-  query_list += "DROP TABLE IF EXISTS scratch_rank;"
-  query_list += "CREATE TABLE scratch_rank AS SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1;"
 
   # Create cached queries for Shark Mem
   if not opts.shark_no_cache:
