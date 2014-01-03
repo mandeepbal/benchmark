@@ -335,6 +335,10 @@ def run_shark_benchmark(opts):
     query_list += local_clean_query
   query_list += local_query_map[opts.query_num][0]
 
+  # Warm up for Query 1
+  if '1' in opts.query_num:
+    query_list += local_query_map[opts.query_num][0]
+
   query_list = re.sub("\s\s+", " ", query_list.replace('\n', ' '))
 
   print "\nQuery:"
