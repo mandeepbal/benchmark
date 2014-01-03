@@ -6,15 +6,35 @@ layout: default
 <!-- This is an open source benchmark which compares the performance of several large scale data-processing frameworks. -->
 
 <script>
-  var redshift = [[2.82], [3.03], [10.50], [28.03], [63.92], [87.74], [34.66], [48.85], [198.96]];
-  var impala_disk = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72]];
-  var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96]];
-  var shark_disk = [[16.33],[15.68],[38.77],[224.59],[239.14],[283.33],[233.97],[262.35],[747.05],[381.77]];
-  var shark_mem = [[1.68],[1.73],[3.58],[89.93],[103.12],[193.23],[112.06],[168.68],[897.66],[186.35]];
-  var hive = [[59.87],[68.51],[60.12],[726.04],[744.59],[790.09],[555.03],[694.82],[2040.43],[962.84]];
-  var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1,361.90],[966.18]];
+  var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25]];
 
-  var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.12", "tez"];
+  var impala_disk = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], [0]];
+
+  var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
+
+  var shark_disk = [[8.7],[11.6],[65.7],[220.7],[243.6],[295.2],[231.0],[254.3],[628.6], [490.1], [417.6], [63.9]];
+
+  var shark_mem = [[1.4],[1.2],[3.0],[108.6],[132.4],[152.5],[97.3],[129.8],[495.1], [205.6], [157.4], [50.7]];
+
+  var hive_10_cdh = [[49.33],[63.65],[75.28],[492.96],[508.33],[577.75],[425.65],[579.40],[1781.21],[837.48], [685.20], [151.00]]
+
+  var hive_11_hdp_mr1 = [[57.11],[66.53],[58.47],[657.67],[696.99],[784.48],[729.87],[898.06],[2361.05],[1221.95], [1221.95], [992.13]]
+
+  var hive_11_cdh5_yarn = [[40.56],[49.36],[67.05],[364.41],[391.50],[444.40],[362.30],[482.94],[1583.94],[667.97], [546.47], [121.27]]
+
+  var hive_12_warmup = [[50.49],[59.93],[43.34],[730.62],[764.95],[833.30],[561.14],[717.56],[2374.17],[1047.45], [896.47], [150.48]];
+
+  var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1361.90],[966.18], [894.16], [62.60]];
+
+  var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10 MR1", "hive 0.11 YARN", "hive 0.11 MR1", "hive 0.12 YARN", "tez"];
+
+  function get_data(index) {
+    return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
+  }
+
+  function get_q4_data(index) {
+    return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
+  }
 </script>
 
 <h2 id="introduction">Introduction</h2>
@@ -188,21 +208,21 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
     <th>
       <script type="text/javascript">
         index = 0;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 1;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 2;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
@@ -239,21 +259,21 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
     <th>
       <script type="text/javascript">
         index = 3;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 4;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 5;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
@@ -298,21 +318,21 @@ FROM
     <th>
       <script type="text/javascript">
         index = 6;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 7;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 8;
-        var data = [[redshift[index]], impala_disk[index], impala_mem[index], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_data(index);
         make_graph(data, labels);
       </script>
     </th>
@@ -355,20 +375,22 @@ CREATE TABLE url_counts_total AS
     <th></th>
     <th>
       <script type="text/javascript">
-        var four_1_data = [[0], [0], [0], [582.95], [155.88], [659.08]];
-        make_graph(four_1_data, labels);
+        index = 10;
+        var data = get_q4_data(index);
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
-        var four_2_data = [[0], [0], [0], [132.72], [33.80], [358.38]];
-        make_graph(four_2_data, labels);
+        index = 11;
+        var data = get_q4_data(index);
+        make_graph(data, labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 9;
-        var data = [[0], [0], [0], shark_disk[index], shark_mem[index], hive[index], tez[index]];
+        var data = get_q4_data(index);
         make_graph(data, labels);
       </script>
     </th>
