@@ -5,12 +5,17 @@ layout: default
 
 <!-- This is an open source benchmark which compares the performance of several large scale data-processing frameworks. -->
 
+<script src="media/jquery/jquery-1.9.1.js"></script>
 <script>
-  var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25]];
+
+  // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
+  var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
 
   var impala_disk = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], [0]];
+  var impala_disk_table = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
   var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
+  var impala_mem_table = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
   // Q3c Uses 500 reducers
   var shark_disk = [[9.5],[11.8],[30.3],[207.5],[223.4],[264.6],[211.5],[242.6],[529.7],[363.3],[285.4],[70.6]];
@@ -37,6 +42,26 @@ layout: default
   function get_q4_data(index) {
     return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
   }
+
+  function write_table(query, a, b, c) {
+    var table = $("#" + query);
+    table.append("<tr><td>Redshift</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
+    table.append("<tr><td>Impala - disk</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
+    table.append("<tr><td>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
+    table.append("<tr><td>Shark - disk</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
+    table.append("<tr><td>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
+
+    table.append("<tr><td>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
+    table.append("<tr><td>Hive 0.11 - YARN</td><td>" + hive_11_cdh5_yarn[a] + "</td><td>" + hive_11_cdh5_yarn[b] + "</td><td>" + hive_11_cdh5_yarn[c] + "</td></tr>")
+    table.append("<tr><td>Hive 0.11 - MR1</td><td>" + hive_11_hdp_mr1[a] + "</td><td>" + hive_11_hdp_mr1[b] + "</td><td>" + hive_11_hdp_mr1[c] + "</td></tr>")
+    table.append("<tr><td>Hive 0.12 - YARN</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
+    table.append("<tr><td>Tez</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
+  }
+
+  $(window).bind("load", function() { write_table("Q1", 0, 1, 2) });
+  $(window).bind("load", function() { write_table("Q2", 3, 4, 5) });
+  $(window).bind("load", function() { write_table("Q3", 6, 7, 8) });
+  $(window).bind("load", function() { write_table("Q4", 10, 11, 9) });
 </script>
 
 <h2 id="introduction">Introduction</h2>
@@ -198,7 +223,7 @@ We launch EC2 clusters and run each query several times. We report the median re
 SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
 {% endhighlight %}
 
-<table style="width:800px" class="table tight_rows">
+<table style="width:800px" class="table tight_rows" id="Q1">
   <tr>
     <th></th>
     <th>Query 1A<br>32,888 results</th>
@@ -230,12 +255,6 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
     </th>
   </tr>
   <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
-  <tr><td>Redshift</td><td>2.4</td><td>2.5</td><td>12.2</td></tr>
-  <tr><td>Impala - disk</td><td>9.9</td><td>12</td><td>104</td></tr>
-  <tr><td>Impala - mem</td><td>0.75</td><td>4.48</td><td>108</td></tr>
-  <tr><td>Shark - disk</td><td>11.8</td><td>11.9</td><td>24.9</td></tr>
-  <tr><td>Shark - mem</td><td>1.1</td><td>1.1</td><td>3.5</td></tr>
-  <tr><td>Hive</td><td>45</td><td>63</td><td>70</td></tr>
 </table>
 
 This query scans and filters the dataset and stores the results.
@@ -250,7 +269,7 @@ Both Shark and Impala outperform Hive by 3-4X due in part to more efficient task
 SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(sourceIP, 1, X)
 {% endhighlight %}
 
-<table style="width:800px" class="table tight_rows">
+<table style="width:800px" class="table tight_rows" id="Q2">
   <tr><th></th>
       <th>Query 2A<br>2,067,313 groups</th>
       <th>Query 2B<br>31,348,913 groups</th>
@@ -281,12 +300,6 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
     </th>
   </tr>
   <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
-  <tr><td>Redshift</td><td>28</td><td>65</td><td>92</td></tr>
-  <tr><td>Impala - disk</td><td>130</td><td>216</td><td>565</td></tr>
-  <tr><td>Impala - mem</td><td>121</td><td>208</td><td>557</td></tr>
-  <tr><td>Shark - disk</td><td>210</td><td>238</td><td>279</td></tr>
-  <tr><td>Shark - mem</td><td>111</td><td>141</td><td>156</td></tr>
-  <tr><td>Hive - disk</td><td>466</td><td>490</td><td>552</td></tr>
 </table>
 
 This query applies string parsing to each input tuple then performs a high-cardinality aggregation.
@@ -309,7 +322,7 @@ FROM
   ORDER BY totalRevenue DESC LIMIT 1
 {% endhighlight %}
 
-<table style="width:800px" class="table tight_rows">
+<table style="width:800px" class="table tight_rows" id="Q3">
   <tr><th></th>
       <th>Query 3A<br>485,312 rows</th>
       <th>Query 3B<br>53,332,015 rows</th>
@@ -340,12 +353,6 @@ FROM
     </th>
   </tr>
   <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
-  <tr><td>Redshift</td><td>42</td><td>47</td><td>200</td></tr>
-  <tr><td>Impala - disk</td><td>158</td><td>168</td><td>345</td></tr>
-  <tr><td>Impala - mem</td><td>74</td> <td>90</td><td>337</td></tr>
-  <tr><td>Shark - disk</td><td>253</td><td>277</td><td>538</td></tr>
-  <tr><td>Shark - mem</td><td>131</td><td>172</td><td>447</td></tr>
-  <tr><td>Hive</td><td>423</td><td>638</td><td>1822</td></tr>
 </table>
 
 
@@ -366,7 +373,7 @@ CREATE TABLE url_counts_total AS
 
 {% endhighlight %}
 
-<table style="width:800px" class="table tight_rows">
+<table style="width:800px" class="table tight_rows" id="Q4">
   <tr>
     <th></th>
     <th>Query 4 (phase 1)</th>
@@ -398,12 +405,6 @@ CREATE TABLE url_counts_total AS
     </th>
   </tr>
   <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
-  <tr><td>Redshift</td><td><em>not supported</em></td><td>-</td><td>-</td></tr>
-  <tr><td>Impala - mem</td><td><em>not supported</em></td><td>-</td><td>-</td></tr>
-  <tr><td>Impala - disk</td><td><em>not supported</em></td><td>-</td><td>-</td></tr>
-  <tr><td>Shark - mem</td><td>156</td><td>34</td><td>189</td></tr>
-  <tr><td>Shark - disk</td><td>583</td><td>133</td><td>716</td></tr>
-  <tr><td>Hive</td><td>659</td><td>358</td><td>1017</td></tr>
 </table>
 
 This query calls an external Python function which extracts and aggregates URL information from a web crawl dataset. It then aggregates a total count per URL.
