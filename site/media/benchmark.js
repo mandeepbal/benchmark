@@ -23,7 +23,7 @@ function make_graph(data_in, labels) {
   }
 
   var h = 180;
-  var w = 150;
+  var w = 250;
   var bar_width = 17;
   var bar_spacing = 4;
   var total_bar_width = bar_width + bar_spacing;
