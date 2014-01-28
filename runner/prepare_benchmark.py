@@ -168,34 +168,34 @@ def prepare_shark_dataset(opts):
   if not opts.skip_s3_import:  
     print "=== IMPORTING BENCHMARK DATA FROM S3 ==="
     try:
-      ssh_shark("/root/ephemeral-hdfs/bin/hadoop dfs -mkdir /user/shark/benchmark")
+      ssh_shark("/root/ephemeral-hdfs/bin/hdfs dfs -mkdir /user/shark/benchmark")
     except Exception:
       pass # Folder may already exist
 
     add_aws_credentials(opts.shark_host, "root", opts.shark_identity_file,
-        "/root/ephemeral-hdfs/conf/core-site.xml", opts.aws_key_id, opts.aws_key)
+        "/root/mapreduce/conf/core-site.xml", opts.aws_key_id, opts.aws_key)
 
-    ssh_shark("/root/ephemeral-hdfs/bin/start-mapred.sh")
+    ssh_shark("/root/mapreduce/bin/start-mapred.sh")
     
     ssh_shark( 
-      "/root/ephemeral-hdfs/bin/hadoop distcp " \
+      "/root/mapreduce/bin/hadoop distcp " \
       "s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
       "/user/shark/benchmark/rankings/" % (opts.file_format, opts.data_prefix))
 
     ssh_shark( 
-      "/root/ephemeral-hdfs/bin/hadoop distcp " \
+      "/root/mapreduce/bin/hadoop distcp " \
       "s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
       "/user/shark/benchmark/uservisits/" % (
         opts.file_format, opts.data_prefix))
     
     ssh_shark( 
-      "/root/ephemeral-hdfs/bin/hadoop distcp " \
+      "/root/mapreduce/bin/hadoop distcp " \
       "s3n://big-data-benchmark/pavlo/%s/%s/crawl/ " \
       "/user/shark/benchmark/crawl/" % (opts.file_format, opts.data_prefix))
 
     # Scratch table used for JVM warmup
     ssh_shark(
-      "/root/ephemeral-hdfs/bin/hadoop distcp /user/shark/benchmark/rankings " \
+      "/root/mapreduce/bin/hadoop distcp /user/shark/benchmark/rankings " \
       "/user/shark/benchmark/scratch"
     )
 
