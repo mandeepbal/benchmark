@@ -59,17 +59,18 @@ layout: default
 
   function write_table(query, a, b, c) {
     var table = $("#" + query);
-    table.append("<tr><td nowrap>Redshift</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Impala - disk</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Shark - disk</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
+    $("." + query + "candestroy").remove();
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Redshift</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - disk</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - disk</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
 
-    table.append("<tr><td nowrap>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Hive 0.11 - YARN</td><td>" + hive_11_cdh5_yarn[a] + "</td><td>" + hive_11_cdh5_yarn[b] + "</td><td>" + hive_11_cdh5_yarn[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Hive 0.11 - MR1</td><td>" + hive_11_hdp_mr1[a] + "</td><td>" + hive_11_hdp_mr1[b] + "</td><td>" + hive_11_hdp_mr1[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Hive 0.12 - YARN</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
-    table.append("<tr><td nowrap>Tez</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.11 - YARN</td><td>" + hive_11_cdh5_yarn[a] + "</td><td>" + hive_11_cdh5_yarn[b] + "</td><td>" + hive_11_cdh5_yarn[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.11 - MR1</td><td>" + hive_11_hdp_mr1[a] + "</td><td>" + hive_11_hdp_mr1[b] + "</td><td>" + hive_11_hdp_mr1[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.12 - YARN</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Tez</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
   }
 
   $(window).bind("load", function() { write_table("Q1", 0, 1, 2) });
