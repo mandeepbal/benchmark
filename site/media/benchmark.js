@@ -15,8 +15,7 @@
       });
     });
 
-function make_graph(data_in, labels) {
-  alt_data = [[10],[10],[10],[10],[10],[10],[10],[10],[10]]
+function make_graph(data_in, labels, alt_data) {
   var max_value = 0;
   for (var i=0; i < data_in.length; i++) {
     var array_max = Math.max.apply(Math, data_in[i]); // really?
@@ -59,7 +58,7 @@ function make_graph(data_in, labels) {
     var idx = -1;
     chartPanel.add(pv.Bar)
       .data(function(i) { return i; })
-      .width(bar_width)
+      .width((bar_width * data_in.length)/data.length)
       .height(y)
       .bottom(0)
       .left(function() { return this.index * group_spacing ; })
@@ -76,15 +75,25 @@ function make_graph(data_in, labels) {
   function onClick () {
     if (clicked) {
       clicked = false;
-      drawChart(alt_data, labels);
+      drawChart(data_in, labels);
     } else {
       clicked = true;
-      drawChart(data_in, labels);
+      interleaved = interleave(alt_data, data_in);
+      drawChart(interleaved, interleave(labels, labels).slice(0, interleaved.length));
     }
   }
 
   vis.event("click", onClick)
 
   drawChart(data_in, labels);
+}
+
+function interleave(data1, data2) {
+  var ret = []
+  for (var i=0; i < Math.min(data1.length, data2.length); i++) {
+    ret.push(data1[i]);
+    ret.push(data2[i]);
+  }
+  return ret;
 }
 
