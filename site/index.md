@@ -60,6 +60,8 @@ layout: default
   function write_table(query, a, b, c) {
     var table = $("#" + query);
     $("." + query + "candestroy").remove();
+
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\">Switch</button></td><td class=\"title-cell\" colspan=\"3\">Median Response Time (s)</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Redshift</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - disk</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
@@ -71,6 +73,32 @@ layout: default
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.11 - MR1</td><td>" + hive_11_hdp_mr1[a] + "</td><td>" + hive_11_hdp_mr1[b] + "</td><td>" + hive_11_hdp_mr1[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.12 - YARN</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Tez</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
+
+    var swap = $(".swap" + query);
+    swap.unbind("click");
+    swap.bind("click", function() { write_old_table(query, a, b, c) } );
+  }
+
+  function write_old_table(query, a, b, c) {
+    var table = $("#" + query);
+    $("." + query + "candestroy").remove();
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\" >Switch</button></td><td class=\"title-cell\" colspan=\"3\">Old vs Current Benchmark (s)</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Redshift - Old</td><td>" + redshift_old[a] + "</td><td>" + redshift_old[b] + "</td><td>" + redshift_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Redshift</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - disk - Old</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - disk</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - mem - Old</td><td>" + impala_mem_old[a] + "</td><td>" + impala_mem_old[b] + "</td><td>" + impala_mem_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - disk - Old</td><td>" + shark_disk_old[a] + "</td><td>" + shark_disk_old[b] + "</td><td>" + shark_disk_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - disk</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem - Old</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1 - Old</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
+
+    var swap = $(".swap" + query);
+    swap.unbind("click");
+    swap.bind("click", function() { write_table(query, a, b, c) });
   }
 
   $(window).bind("load", function() { write_table("Q1", 0, 1, 2) });
@@ -266,7 +294,6 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
       </script>
     </th>
   </tr>
-  <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
 </table>
 
 This query scans and filters the dataset and stores the results.
@@ -308,7 +335,6 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
       </script>
     </th>
   </tr>
-  <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
 </table>
 
 This query applies string parsing to each input tuple then performs a high-cardinality aggregation.
@@ -358,7 +384,6 @@ FROM
       </script>
     </th>
   </tr>
-  <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
 </table>
 
 
@@ -407,7 +432,6 @@ CREATE TABLE url_counts_total AS
       </script>
     </th>
   </tr>
-  <tr><td></td><td class="title-cell" colspan="3">Median Response Time (s)</td></tr>
 </table>
 
 This query calls an external Python function which extracts and aggregates URL information from a web crawl dataset. It then aggregates a total count per URL.
