@@ -79,7 +79,7 @@ function make_graph(data_in, alt_data, labels) {
     } else {
       clicked = true;
       interleaved = interleave(alt_data, data_in);
-      drawChart(interleaved, interleave(labels, labels).slice(0, interleaved.length));
+      drawChart(interleaved, interleaveLabels(labels).slice(0, interleaved.length));
     }
   }
 
@@ -93,6 +93,15 @@ function interleave(data1, data2) {
   for (var i=0; i < Math.min(data1.length, data2.length); i++) {
     ret.push(data1[i]);
     ret.push(data2[i]);
+  }
+  return ret;
+}
+
+function interleaveLabels(labels) {
+  var ret = []
+  for (var i=0; i < labels.length; i++) {
+    ret.push(labels[i]);
+    ret.push("current");
   }
   return ret;
 }
