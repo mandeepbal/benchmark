@@ -15,7 +15,7 @@
       });
     });
 
-function make_graph(data_in, labels, alt_data) {
+function make_graph(data_in, alt_data, labels) {
   var max_value = 0;
   for (var i=0; i < data_in.length; i++) {
     var array_max = Math.max.apply(Math, data_in[i]); // really?

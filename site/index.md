@@ -10,20 +10,26 @@ layout: default
 
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
   var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
+  var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
 
   var impala_disk = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], [0]];
+  var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
   var impala_disk_table = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
   var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
+  var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
   var impala_mem_table = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
   // Q3c Uses 500 reducers
   var shark_disk = [[9.5],[11.8],[30.3],[207.5],[223.4],[264.6],[211.5],[242.6],[529.7],[363.3],[285.4],[70.6]];
+  var shark_disk_old = [[11.8],[11.9],[24.9],[210],[238],[279],[253],[277],[538],[583],[133],[716]];
 
   // Q3 Uses 500 reducers
   var shark_mem = [[1.7],[1.7],[3.4],[98.3],[117.9],[154.5],[107.5],[139.7],[511.4],[191.8],[154.9],[37.6]];
+  var shark_mem_old = [[1.1],[1.1],[3.5],[111],[141],[156],[131],[172],[447],[156],[34],[189]];
 
   var hive_10_cdh = [[49.33],[63.65],[75.28],[492.96],[508.33],[577.75],[425.65],[579.40],[1781.21],[837.48], [685.20], [151.00]]
+  var hive_10_cdh_old = [[45],[63],[70],[466],[490],[552],[423],[638],[1822],[659],[358],[1017]];
 
   var hive_11_hdp_mr1 = [[57.11],[66.53],[58.47],[657.67],[696.99],[784.48],[729.87],[898.06],[2361.05],[1221.95], [1221.95], [992.13]]
 
@@ -39,8 +45,16 @@ layout: default
     return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
   }
 
+  function get_olddata(index) {
+    return [[redshift_old[index]],[impala_disk_old[index]],[impala_mem_old[index]],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
+  }
+
   function get_q4_data(index) {
     return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
+  }
+
+  function get_q4_olddata(index) {
+    return [[0],[0],[0],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
   }
 
   function write_table(query, a, b, c) {
@@ -235,22 +249,19 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
     <th>
       <script type="text/javascript">
         index = 0;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 1;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 2;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
   </tr>
@@ -280,22 +291,19 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
     <th>
       <script type="text/javascript">
         index = 3;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 4;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 5;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
   </tr>
@@ -333,22 +341,19 @@ FROM
     <th>
       <script type="text/javascript">
         index = 6;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 7;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 8;
-        var data = get_data(index);
-        make_graph(data, labels);
+        make_graph(get_data(index), get_olddata(index), labels);
       </script>
     </th>
   </tr>
@@ -385,22 +390,19 @@ CREATE TABLE url_counts_total AS
     <th>
       <script type="text/javascript">
         index = 10;
-        var data = get_q4_data(index);
-        make_graph(data, labels);
+        make_graph(get_q4_data(index), get_q4_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 11;
-        var data = get_q4_data(index);
-        make_graph(data, labels);
+        make_graph(get_q4_data(index), get_q4_olddata(index), labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 9;
-        var data = get_q4_data(index);
-        make_graph(data, labels);
+        make_graph(get_q4_data(index), get_q4_olddata(index), labels);
       </script>
     </th>
   </tr>
