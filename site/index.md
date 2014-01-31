@@ -6,8 +6,8 @@ layout: default
 <!-- This is an open source benchmark which compares the performance of several large scale data-processing frameworks. -->
 
 <script src="media/jquery/jquery-1.9.1.js"></script>
-<script>
 
+<script type="text/javascript">
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
   var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
   var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
@@ -118,7 +118,7 @@ Several analytic frameworks have been announced in the last 1 year. Among them a
 * [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. 
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.10, 1/2013 *Note: Hive [v0.11](http://hortonworks.com/blog/apache-hive-0-11-stinger-phase-1-delivered/), which advertises improved performance, was recently released but is not yet included*)
 * [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8 preview, 5/2013)
-* [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible<a href="#discussion">*</a> SQL engine with its own MPP-like execution engine. (v1.0, 4/2013)
+* [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible[\*](#discussion) SQL engine with its own MPP-like execution engine. (v1.0, 4/2013)
 * [Stinger/Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview) - Tez is a next generation Hadoop execution engine currently in development (v0.2.0, 12/2013)
 
 This remains a  _**work in progress**_ and will evolve to include additional frameworks and new capabilities. We welcome <a href="#contributions">contributions</a>.

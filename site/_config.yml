@@ -1,4 +1,4 @@
 auto: True
 server: True
 pygments: True
-markdown: redcarpet
+markdown: maruku
