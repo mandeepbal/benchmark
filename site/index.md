@@ -16,9 +16,12 @@ layout: default
   var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
   var impala_disk_table = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
-  var impala_mem = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
+  //var impala_mem_ext3 = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
   var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
-  var impala_mem_table = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
+
+  // Impala used ext4 in these current runs
+  impala_mem = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005],[0]]
+  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
   // Q3c Uses 500 reducers
   var shark_disk = [[6.6],[7.0],[22.4],[151.4],[164.3],[196.5],[111.7],[135.6],[382.6],[279.4],[232.2],[47.2]];
