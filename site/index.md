@@ -111,22 +111,22 @@ layout: default
 
 <h2 id="introduction">Introduction</h2>
 
-Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
+Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
 * [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. 
-* [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.10, 1/2013 *Note: Hive [v0.11](http://hortonworks.com/blog/apache-hive-0-11-stinger-phase-1-delivered/), which advertises improved performance, was recently released but is not yet included*)
-* [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8 preview, 5/2013)
-* [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible[\*](#discussion) SQL engine with its own MPP-like execution engine. (v1.0, 4/2013)
-* [Stinger/Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview) - Tez is a next generation Hadoop execution engine currently in development (v0.2.0, 12/2013)
+* [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.12)
+* [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8.1)
+* [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible[\*](#discussion) SQL engine with its own MPP-like execution engine. (v1.2.3)
+* [Stinger/Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview) - Tez is a next generation Hadoop execution engine currently in development (v0.2.0)
 
 This remains a  _**work in progress**_ and will evolve to include additional frameworks and new capabilities. We welcome <a href="#contributions">contributions</a>.
 
 ### What is being evaluated?
-This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF's, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF's), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
+This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF\'s, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF\'s), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
 
  
 <h3 id="workload">Dataset and Workload</h3>
-Our dataset and queries are inspired by the benchmark contained in "[A comparison of approaches to large scale analytics](http://database.cs.brown.edu/sigmod09/benchmarks-sigmod09.pdf)". The input data set consists of a set of unstructured HTML documents and two SQL tables which contain summary information. It was generated using [Intel's Hadoop benchmark tools](https://github.com/intel-hadoop/HiBench) and data sampled from the [Common Crawl](http://commoncrawl.org) document corpus. There are three datasets with the following schemas:
+Our dataset and queries are inspired by the benchmark contained in [a comparison of approaches to large scale analytics](http://database.cs.brown.edu/sigmod09/benchmarks-sigmod09.pdf). The input data set consists of a set of unstructured HTML documents and two SQL tables which contain summary information. It was generated using [Intel\'s Hadoop benchmark tools](https://github.com/intel-hadoop/HiBench) and data sampled from the [Common Crawl](http://commoncrawl.org) document corpus. There are three datasets with the following schemas:
 
 <div class="span11" style="float: none; margin-top: 5px; margin-bottom: 5px; margin-left: auto; margin-right: auto;">
 <table padding="10" id="inputSchema">
@@ -136,13 +136,13 @@ Our dataset and queries are inspired by the benchmark contained in "[A compariso
     <th markdown="1">`UserVisits`</th>
   </tr>
   <tr>
-    <td style="padding-left: 20px; padding-right: 20px;">
+    <td style="padding-left: 20px; padding-right: 20px;" markdown="1">
       _Unstructured HTML documents_
     </td>
     <td style="padding-left: 20px; padding-right: 20px;" markdown="1">
       _Lists websites and their page rank_
     </td>
-    <td style="padding-left: 20px; padding-right: 20px;">
+    <td style="padding-left: 20px; padding-right: 20px;" markdown="1">
       _Stores server logs for each web page_
     </td>
   </tr>
@@ -183,7 +183,7 @@ duration INT
 
 <h4 class="clickable collapsed" data-toggle="collapse" data-target="#hardware-div" id="hardware">Hardware Configuration <img src="media/toggle.gif"/></h4>
 <div id="hardware-div" class="collapse">
-For Impala, Hive, and Shark, this benchmark uses the m2.4xlarge EC2 instance type. Redshift only has very small and very large instances, so rather than compare identical hardware, we <em>fix the cost</em> of the cluster and opt to purchase a larger number of small nodes for Redshift. We use a scale factor of 5 for the experiments in all cases.
+For Impala, Hive, Tez, and Shark, this benchmark uses the m2.4xlarge EC2 instance type. Redshift only has very small and very large instances, so rather than compare identical hardware, we <em>fix the cost</em> of the cluster and opt to purchase a larger number of small nodes for Redshift. We use a scale factor of 5 for the experiments in all cases.
 
 <h4> Instance stats </h4>
 
@@ -197,7 +197,7 @@ For Impala, Hive, and Shark, this benchmark uses the m2.4xlarge EC2 instance typ
     <th>$/hour</th>
   </tr>
   <tr>
-    <td>Impala, Hive, Shark</td>
+    <td>Impala, Hive, Tez, Shark</td>
     <td>m2.4xlarge</td>
     <td>68.4 GB</td>
     <td>1680GB (2HDD)</td>
@@ -226,7 +226,7 @@ For Impala, Hive, and Shark, this benchmark uses the m2.4xlarge EC2 instance typ
     <th>Cluster $/hour</th>
   </tr>
   <tr>
-    <td>Impala, Hive, Shark</td>
+    <td>Impala, Hive, Tez, Shark</td>
     <td>m2.4xlarge</td>
     <td>5</td>
     <td>342 GB</td>
