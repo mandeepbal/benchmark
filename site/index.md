@@ -173,9 +173,9 @@ duration INT
 </div>
 
  * [Query 1](#query1) and [Query 2](#query2) are exploratory SQL queries. We vary the size of the result to expose scaling properties of each systems.
-  * Varaint A: __BI-Like__ - result sets are small (e.g., could fit in memory in a BI tool)
-  * Variant B: __Intermediate__ - result set may not fit in memory on one node
-  * Variant C: __ETL-Like__ - result sets are large and require several nodes to store
+    * Varaint A: __BI-Like__ - result sets are small (e.g., could fit in memory in a BI tool)
+    * Variant B: __Intermediate__ - result set may not fit in memory on one node
+    * Variant C: __ETL-Like__ - result sets are large and require several nodes to store
 
  * [Query 3](#query3) is a join query with a small result set, but varying sizes of joins.
 
@@ -253,13 +253,13 @@ We launch EC2 clusters and run each query several times. We report the median re
 
 <table class="table tight_rows" markdown="1">
 
-<tr><td>__Redshift__</td><td>Amazon Redshift with default options.</td></tr>
-<tr><td>__Shark - disk__</td><td>Input and output tables are on-disk compressed with gzip. OS buffer cache is cleared before each run.</td></tr>
-<tr><td>__Impala - disk__</td><td>Input and output tables are on-disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
-<tr><td>__Shark - mem__</td><td>Input tables are stored in Spark cache. Output tables are stored in Spark cache.</td></tr>
-<tr><td>__Impala - mem__</td><td>Input tables are coerced into the OS buffer cache. Output tables are on disk (Impala has no notion of a cached table).</td></tr>
-<tr><td>__Hive__</td><td>Hive on HDP 2.0.6 with default options. Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
-<tr><td>__Tez__</td><td>Tez with the configuration parameters specified [here](http://public-repo-1.hortonworks.com/HDP-LABS/Projects/Stinger/StingerTechnicalPreviewInstall.pdf). Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td markdown="1">__Redshift__</td><td>Amazon Redshift with default options.</td></tr>
+<tr><td markdown="1">__Shark - disk__</td><td>Input and output tables are on-disk compressed with gzip. OS buffer cache is cleared before each run.</td></tr>
+<tr><td markdown="1">__Impala - disk__</td><td>Input and output tables are on-disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td markdown="1">__Shark - mem__</td><td>Input tables are stored in Spark cache. Output tables are stored in Spark cache.</td></tr>
+<tr><td markdown="1">__Impala - mem__</td><td>Input tables are coerced into the OS buffer cache. Output tables are on disk (Impala has no notion of a cached table).</td></tr>
+<tr><td markdown="1">__Hive__</td><td>Hive on HDP 2.0.6 with default options. Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td markdown="1">__Tez__</td><td>Tez with the configuration parameters specified [here](http://public-repo-1.hortonworks.com/HDP-LABS/Projects/Stinger/StingerTechnicalPreviewInstall.pdf). Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
 </table>
 
 <h4 id="query1">1. Scan Query </h4>
