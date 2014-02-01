@@ -575,15 +575,40 @@ To allow this benchmark to be easily reproduced, we've prepared various sizes of
 
 ### Launching and Loading Clusters
 
-1. Create an Impala, Redshift, Hive or Shark cluster using their provided provisioning tools.
+1. Create an Impala, Redshift, Hive/Tez or Shark cluster using their provided provisioning tools.
   * Each cluster should be created in the US East EC2 Region
   * For Redshift, use the [Amazon AWS console](https://console.aws.amazon.com/redshift/). Make sure to whitelist the node you plan to run the benchmark from in the Redshift control panel.
-  * For Impala and Hive, use the [Cloudera Manager EC2 deployment instructions](http://blog.cloudera.com/blog/2013/03/how-to-create-a-cdh-cluster-on-amazon-ec2-via-cloudera-manager/). Make sure to upload your own RSA key so that you can use the same key to log into the nodes and run queries.
+  * For Impala, use the [Cloudera Manager EC2 deployment instructions](http://blog.cloudera.com/blog/2013/03/how-to-create-a-cdh-cluster-on-amazon-ec2-via-cloudera-manager/). Make sure to upload your own RSA key so that you can use the same key to log into the nodes and run queries.
   * For Shark, use the [Spark/Shark EC2 launch scripts](http://spark-project.org/docs/latest/ec2-scripts.html). These are available as part of the latest Spark distribution.
-  * {% highlight bash %}
-$> ec2/spark-ec2 -s 5 -k [KEY PAIR NAME] -i [IDENTITY FILE] --hadoop-major-version=2 -t "m2.4xlarge" launch [CLUSTER NAME] {% endhighlight %} **NOTE:** You must set **AWS\_ACCESS\_KEY\_ID** and **AWS\_SECRET\_ACCESS\_KEY** environment variables.
+  {% highlight bash %}
+    $> ec2/spark-ec2 -s 5 -k [KEY PAIR NAME] -i [IDENTITY FILE] --hadoop-major-version=2 -t "m2.4xlarge" launch [CLUSTER NAME] {% endhighlight %} **NOTE:** You must set **AWS\_ACCESS\_KEY\_ID** and **AWS\_SECRET\_ACCESS\_KEY** environment variables.
 
-2. Scripts for preparing data are included in the [benchmark github repo](https://github.com/amplab/benchmark.git). Use the provided `prepare-benchmark.sh` to load an appropriately sized dataset into the cluster. <br><br> `./prepare-benchmark.sh --help`
+  * For Hive and Tez, use the following instructions to launch a cluster
+
+#### Launching Hive and Tez Clusters
+This command will launch and configure the specified number of slaves in addition to a Master and an Ambari host.
+    {% highlight bash %}
+          $> AWS_ACCESS_KEY_ID=[AWS ID] AWS_SECRET_ACCESS_KEY=[AWS SECRET]
+          ./prepare-hdp.sh --slaves=N --key-pair=[INSTANCE KEYPAIR]
+          --identity-file=[SSH PRIVATE KEY] --instance-type=[INSTANCE TYPE]
+          launch [CLUSTER NAME]{% endhighlight %}
+
+Once complete, it will report both the internal and external hostnames of each node.
+
+  1. SSH into the Ambari node as root and run `ambari-server start`
+  2. Visit port 8080 of the Ambari node and login as admin to begin cluster setup.
+  3. When prompted to enter hosts, you must use the interal EC2 hostnames.
+  4. Install all services and take care to install all master services on the node designated as master by the setup script.
+  5. This installation should take 10-20 minutes. Load the benchmark data once it is complete.
+
+To install Tez on this cluster, use the following command. It will remove the ability to use normal Hive.
+  {% highlight bash %}
+    $> ./prepare-benchmark.sh --hive-tez --hive-host [MASTER REPORTED BY SETUP
+    SCRIPT] --hive-identity-file [SSH PRIVATE KEY]{% endhighlight %}
+
+#### Loading Benchmark Data
+
+Scripts for preparing data are included in the [benchmark github repo](https://github.com/amplab/benchmark.git). Use the provided `prepare-benchmark.sh` to load an appropriately sized dataset into the cluster. <br><br> `./prepare-benchmark.sh --help`
 
 Here are a few examples showing the options used in this benchmark...
 
@@ -664,7 +689,29 @@ $> ./run-query.sh
 
 </table>
 
+<table style="width:1000px;margin-top:20px;table-layout: fixed;">
+  <tr>
+    <th>Hive/Tez</th>
+  </tr>
+<tr valign="top">
+<td>
+{% highlight bash %}
+$> ./prepare-benchmark.sh
+--hive
+--hive-host [MASTER REPORTED BY SETUP SCRIPT]
+--hive-slaves [COMMA SEPARATED LIST OF SLAVES]
+--hive-identity-file [SSH PRIVATE KEY]
+-d [AWS ID]
+-k [AWS SECRET]
+--file-format=sequence-snappy
+--scale-factor=5
+{% endhighlight %}
+</td><td>
+</td><td>
+</td></tr>
+
+</table>
+
 <ol>
-<li value="3"> If you are adding a new framework or using this to produce your own scientific performance numbers, get in touch with us. The virtualized environment of EC2 makes eeking out the best results a bit tricky. We can help.
-</li>
+If you are adding a new framework or using this to produce your own scientific performance numbers, get in touch with us. The virtualized environment of EC2 makes eeking out the best results a bit tricky. We can help.
 </ol>
