@@ -259,7 +259,7 @@ We launch EC2 clusters and run each query several times. We report the median re
 <tr><td markdown="1">__Shark - mem__</td><td>Input tables are stored in Spark cache. Output tables are stored in Spark cache.</td></tr>
 <tr><td markdown="1">__Impala - mem__</td><td>Input tables are coerced into the OS buffer cache. Output tables are on disk (Impala has no notion of a cached table).</td></tr>
 <tr><td markdown="1">__Hive__</td><td>Hive on HDP 2.0.6 with default options. Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
-<tr><td markdown="1">__Tez__</td><td>Tez with the configuration parameters specified [here](http://public-repo-1.hortonworks.com/HDP-LABS/Projects/Stinger/StingerTechnicalPreviewInstall.pdf). Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
+<tr><td markdown="1">__Tez__</td><td markdown="1">Tez with the configuration parameters specified [here](http://public-repo-1.hortonworks.com/HDP-LABS/Projects/Stinger/StingerTechnicalPreviewInstall.pdf). Input and output tables are on disk compressed with snappy. OS buffer cache is cleared before each run.</td></tr>
 </table>
 
 <h4 id="query1">1. Scan Query </h4>
