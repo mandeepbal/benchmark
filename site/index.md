@@ -5,8 +5,6 @@ layout: default
 
 <!-- This is an open source benchmark which compares the performance of several large scale data-processing frameworks. -->
 
-<script src="media/jquery/jquery-1.9.1.js"></script>
-
 <script type="text/javascript">
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
   var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
