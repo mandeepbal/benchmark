@@ -15,7 +15,7 @@
       });
     });
 
-function make_graph(data_in, alt_data, labels) {
+function make_graph(data_in, alt_data, labels, alt_labels) {
   var max_value = 0;
   for (var i=0; i < data_in.length; i++) {
     var array_max = Math.max.apply(Math, data_in[i]); // really?
@@ -75,33 +75,41 @@ function make_graph(data_in, alt_data, labels) {
   function onClick () {
     if (clicked) {
       clicked = false;
-      drawChart(data_in, labels);
+      drawChart(data_in, firstSub(labels));
     } else {
       clicked = true;
-      interleaved = interleave(alt_data, data_in);
-      drawChart(interleaved, interleaveLabels(labels).slice(0, interleaved.length));
+      max = Math.min(data_in.length, alt_data.length)
+      drawChart(interleave(alt_data, data_in, max), interleaveLabels(alt_labels, labels, max));
     }
   }
 
   vis.event("click", onClick)
 
-  drawChart(data_in, labels);
+  drawChart(data_in, firstSub(labels));
 }
 
-function interleave(data1, data2) {
+function interleave(data1, data2, max) {
   var ret = []
-  for (var i=0; i < Math.min(data1.length, data2.length); i++) {
+  for (var i=0; i < max; i++) {
     ret.push(data1[i]);
     ret.push(data2[i]);
   }
   return ret;
 }
 
-function interleaveLabels(labels) {
+function firstSub(arr) {
   var ret = []
-  for (var i=0; i < labels.length; i++) {
-    ret.push(labels[i]);
-    ret.push("current");
+  for (var i=0; i < arr.length; i++) {
+    ret.push(arr[i][0]);
+  }
+  return ret;
+}
+
+function interleaveLabels(labels1, labels2, max) {
+  var ret = []
+  for (var i=0; i < max; i++) {
+    ret.push(labels1[i][0] + " - " + labels1[i][1]);
+    ret.push(labels2[i][1]);
   }
   return ret;
 }

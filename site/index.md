@@ -41,7 +41,9 @@ layout: default
 
   var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1361.90],[966.18], [894.16], [62.60]];
 
-  var labels = ["redshift", "impala - disk", "impala - mem", "shark - disk", "shark - mem", "hive 0.10 MR1", "hive 0.11 YARN", "hive 0.11 MR1", "hive 0.12 YARN", "tez"];
+  var labels = [["redshift", ""], ["impala - disk", "1.2.3"], ["impala - mem", "1.2.3"], ["shark - disk", "0.8.1"], ["shark - mem", "0.8.1"], ["hive", "0.10 MR1"], ["hive", "0.11 YARN"], ["hive", "0.11 MR1"], ["hive", "0.12 YARN"], ["tez", "0.2.0"]];
+
+  var old_labels = [["redshift", ""], ["impala - disk", "1.0"], ["impala - mem", "1.0"], ["shark - disk", "0.7.3"], ["shark - mem", "0.7.3"], ["hive", "0.10 MR1"], ["hive", "0.11 YARN"], ["hive", "0.11 MR1"], ["hive", "0.12 YARN"], ["tez", "0.2.0"]];
 
   function get_data(index) {
     return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
@@ -280,19 +282,19 @@ SELECT pageURL, pageRank FROM rankings WHERE pageRank > X
     <th>
       <script type="text/javascript">
         index = 0;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 1;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 2;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
   </tr>
@@ -321,19 +323,19 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
     <th>
       <script type="text/javascript">
         index = 3;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 4;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 5;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
   </tr>
@@ -370,19 +372,19 @@ FROM
     <th>
       <script type="text/javascript">
         index = 6;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 7;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
     <th>
       <script type="text/javascript">
         index = 8;
-        make_graph(get_data(index), get_olddata(index), labels);
+        make_graph(get_data(index), get_olddata(index), labels, old_labels);
       </script>
     </th>
   </tr>
