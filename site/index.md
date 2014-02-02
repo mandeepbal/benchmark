@@ -7,46 +7,31 @@ layout: default
 
 <script type="text/javascript">
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
+
+  // Current Runs
+  var labels = [["redshift", ""], ["impala - disk", "1.2.3"], ["impala - mem", "1.2.3"], ["shark - disk", "0.8.1"], ["shark - mem", "0.8.1"], ["hive", "0.12 YARN"], ["tez", "0.2.0"]];
   var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
-  var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
-
-  //var impala_disk_ext3 = [[14.03],[15.52],[64.87],[135.45],[172.86],[325.55],[149.45],[168.72], [0]];
   var impala_disk = [[12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[0]];
-  var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
-  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[0], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
-
-  //var impala_mem_ext3 = [[2.03],[3.04],[66.82],[76.62],[138.24],[290.455],[40.435],[73.96], [0]];
-  var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
-
-  // Impala used ext4 in these current runs
   impala_mem = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005],[0]]
-  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
-
-  // Q3c Uses 500 reducers
   var shark_disk = [[6.6],[7.0],[22.4],[151.4],[164.3],[196.5],[111.7],[135.6],[382.6],[279.4],[232.2],[47.2]];
-  var shark_disk_old = [[11.8],[11.9],[24.9],[210],[238],[279],[253],[277],[538],[583],[133],[716]];
-
-  // Q3 Uses 500 reducers
   var shark_mem = [[1.7],[1.8],[3.6],[83.7],[100.1],[132.6],[44.7],[67.3],[318.0],[191.4],[162.9],[28.1]];
-  var shark_mem_old = [[1.1],[1.1],[3.5],[111],[141],[156],[131],[172],[447],[156],[34],[189]];
-
-  var hive_10_cdh = [[49.33],[63.65],[75.28],[492.96],[508.33],[577.75],[425.65],[579.40],[1781.21],[837.48], [685.20], [151.00]]
-  var hive_10_cdh_old = [[45],[63],[70],[466],[490],[552],[423],[638],[1822],[659],[358],[1017]];
-
-  var hive_11_hdp_mr1 = [[57.11],[66.53],[58.47],[657.67],[696.99],[784.48],[729.87],[898.06],[2361.05],[1221.95], [1221.95], [992.13]]
-
-  var hive_11_cdh5_yarn = [[40.56],[49.36],[67.05],[364.41],[391.50],[444.40],[362.30],[482.94],[1583.94],[667.97], [546.47], [121.27]]
-
   var hive_12_warmup = [[50.49],[59.93],[43.34],[730.62],[764.95],[833.30],[561.14],[717.56],[2374.17],[1047.45], [896.47], [150.48]];
-
   var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1361.90],[966.18], [894.16], [62.60]];
 
-  var labels = [["redshift", ""], ["impala - disk", "1.2.3"], ["impala - mem", "1.2.3"], ["shark - disk", "0.8.1"], ["shark - mem", "0.8.1"], ["hive", "0.10 MR1"], ["hive", "0.11 YARN"], ["hive", "0.11 MR1"], ["hive", "0.12 YARN"], ["tez", "0.2.0"]];
+  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[0], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
+  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
 
-  var old_labels = [["redshift", ""], ["impala - disk", "1.0"], ["impala - mem", "1.0"], ["shark - disk", "0.7.3"], ["shark - mem", "0.7.3"], ["hive", "0.10 MR1"], ["hive", "0.11 YARN"], ["hive", "0.11 MR1"], ["hive", "0.12 YARN"], ["tez", "0.2.0"]];
+  // Old Runs
+  var old_labels = [["redshift", ""], ["impala - disk", "1.0"], ["impala - mem", "1.0"], ["shark - disk", "0.7.3"], ["shark - mem", "0.7.3"], ["hive", "0.10 MR1"]];
+  var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
+  var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
+  var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
+  var shark_disk_old = [[11.8],[11.9],[24.9],[210],[238],[279],[253],[277],[538],[583],[133],[716]];
+  var shark_mem_old = [[1.1],[1.1],[3.5],[111],[141],[156],[131],[172],[447],[156],[34],[189]];
+  var hive_10_cdh_old = [[45],[63],[70],[466],[490],[552],[423],[638],[1822],[659],[358],[1017]];
 
   function get_data(index) {
-    return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
+    return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_12_warmup[index]],[tez[index]]];
   }
 
   function get_olddata(index) {
@@ -54,7 +39,7 @@ layout: default
   }
 
   function get_q4_data(index) {
-    return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_10_cdh[index]],[hive_11_hdp_mr1[index]],[hive_11_cdh5_yarn[index]],[hive_12_warmup[index]],[tez[index]]];
+    return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_12_warmup[index]],[tez[index]]];
   }
 
   function get_q4_olddata(index) {
@@ -71,10 +56,6 @@ layout: default
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Impala - mem</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - disk</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
-
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.11 - YARN</td><td>" + hive_11_cdh5_yarn[a] + "</td><td>" + hive_11_cdh5_yarn[b] + "</td><td>" + hive_11_cdh5_yarn[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.11 - MR1</td><td>" + hive_11_hdp_mr1[a] + "</td><td>" + hive_11_hdp_mr1[b] + "</td><td>" + hive_11_hdp_mr1[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.12 - YARN</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Tez</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
 
@@ -98,7 +79,6 @@ layout: default
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem - Old</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Shark - mem</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1 - Old</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>Hive 0.10 - MR1</td><td>" + hive_10_cdh[a] + "</td><td>" + hive_10_cdh[b] + "</td><td>" + hive_10_cdh[c] + "</td></tr>")
 
     var swap = $(".swap" + query);
     swap.unbind("click");
