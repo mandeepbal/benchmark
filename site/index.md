@@ -9,41 +9,32 @@ layout: default
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
 
   // Current Runs
-  var labels = [["Redshift", "Current"], ["Impala - Disk", "1.2.3"], ["Impala - Mem", "1.2.3"], ["Shark - Disk", "0.8.1"], ["Shark - Mem", "0.8.1"], ["Hive", "0.12 YARN"], ["Tez", "0.2.0"]];
-  var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
+  var labels = [["Impala - Disk", "1.2.3"], ["Impala - Mem", "1.2.3"]];
   var impala_disk = [[12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[0]];
   impala_mem = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005],[0]]
-  var shark_disk = [[6.6],[7.0],[22.4],[151.4],[164.3],[196.5],[111.7],[135.6],[382.6],[279.4],[232.2],[47.2]];
-  var shark_mem = [[1.7],[1.8],[3.6],[83.7],[100.1],[132.6],[44.7],[67.3],[318.0],[191.4],[162.9],[28.1]];
-  var hive_12_warmup = [[50.49],[59.93],[43.34],[730.62],[764.95],[833.30],[561.14],[717.56],[2374.17],[1047.45], [896.47], [150.48]];
-  var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1361.90],[966.18], [894.16], [62.60]];
 
-  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[0], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
-  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], ["query failed"], ["not supported"], ["not supported"], ["not supported"]];
+  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815], ["<b>query failed</b>"], ["not supported"], ["not supported"], ["not supported"]];
+  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], ["<b>query failed</b>"], ["not supported"], ["not supported"], ["not supported"]];
 
   // Old Runs
-  var old_labels = [["Redshift", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"], ["Hive", "0.10 MR1"]];
-  var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
+  var old_labels = [["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"]];
   var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
   var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
-  var shark_disk_old = [[11.8],[11.9],[24.9],[210],[238],[279],[253],[277],[538],[583],[133],[716]];
-  var shark_mem_old = [[1.1],[1.1],[3.5],[111],[141],[156],[131],[172],[447],[156],[34],[189]];
-  var hive_10_cdh_old = [[45],[63],[70],[466],[490],[552],[423],[638],[1822],[659],[358],[1017]];
 
   function get_data(index) {
-    return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_12_warmup[index]],[tez[index]]];
+    return [[impala_disk[index]],[impala_mem[index]]];
   }
 
   function get_olddata(index) {
-    return [[redshift_old[index]],[impala_disk_old[index]],[impala_mem_old[index]],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
+    return [[impala_disk_old[index]],[impala_mem_old[index]]];
   }
 
   function get_q4_data(index) {
-    return [[0],[0],[0],[shark_disk[index]],[shark_mem[index]],[hive_12_warmup[index]],[tez[index]]];
+    return [];
   }
 
   function get_q4_olddata(index) {
-    return [[0],[0],[0],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
+    return [];
   }
 
   function write_table(query, a, b, c) {
@@ -51,13 +42,8 @@ layout: default
     $("." + query + "candestroy").remove();
 
     table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\">Switch</button></td><td class=\"title-cell\" colspan=\"3\">Median Response Time (s)</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[2][0] + " - " + labels[2][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[3][0] + " - " + labels[3][1] + "</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[4][0] + " - " + labels[4][1] + "</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[5][0] + " - " + labels[5][1] + "</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[6][0] + " - " + labels[6][1] + "</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
 
     var swap = $(".swap" + query);
     swap.unbind("click");
@@ -68,19 +54,10 @@ layout: default
     var table = $("#" + query);
     $("." + query + "candestroy").remove();
     table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\" >Switch</button></td><td class=\"title-cell\" colspan=\"3\">Old vs Current Benchmark (s)</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[0][0] + " - " + old_labels[0][1] + "</td><td>" + redshift_old[a] + "</td><td>" + redshift_old[b] + "</td><td>" + redshift_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[1][0] + " - " + old_labels[1][1] + "</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[2][0] + " - " + old_labels[2][1] + "</td><td>" + impala_mem_old[a] + "</td><td>" + impala_mem_old[b] + "</td><td>" + impala_mem_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[2][0] + " - " + labels[2][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[3][0] + " - " + old_labels[3][1] + "</td><td>" + shark_disk_old[a] + "</td><td>" + shark_disk_old[b] + "</td><td>" + shark_disk_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[3][0] + " - " + labels[3][1] + "</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[4][0] + " - " + old_labels[4][1] + "</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[4][0] + " - " + labels[4][1] + "</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[5][0] + " - " + old_labels[5][1] + "</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[5][0] + " - " + labels[5][1] + "</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[6][0] + " - " + labels[6][1] + "</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[0][0] + " - " + old_labels[0][1] + "</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[1][0] + " - " + old_labels[1][1] + "</td><td>" + impala_mem_old[a] + "</td><td>" + impala_mem_old[b] + "</td><td>" + impala_mem_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
 
     var swap = $(".swap" + query);
     swap.unbind("click");
