@@ -34,6 +34,12 @@ def parse_args():
       help="Whether to include Shark")
   parser.add_option("-r", "--redshift", action="store_true", default=False,
       help="Whether to include Redshift")
+  parser.add_option("--hive", action="store_true", default=False,
+      help="Whether to include Hive")
+  parser.add_option("--hive-tez", action="store_true", default=False,
+      help="Whether to include Hive")
+  parser.add_option("--hive-cdh", action="store_true", default=False,
+      help="Hive on CDH cluster")
 
   parser.add_option("-a", "--impala-host",
       help="Hostname of Impala state store node")
@@ -41,11 +47,17 @@ def parse_args():
       help="Hostname of Shark master node")
   parser.add_option("-c", "--redshift-host",
       help="Hostname of Redshift ODBC endpoint")
+  parser.add_option("--hive-host",
+      help="Hostname of Hive master node")
+  parser.add_option("--hive-slaves",
+      help="Comma separated list of Hive slaves")
 
   parser.add_option("-x", "--impala-identity-file",
       help="SSH private key file to use for logging into Impala node")
   parser.add_option("-y", "--shark-identity-file",
       help="SSH private key file to use for logging into Shark node")
+  parser.add_option("--hive-identity-file",
+      help="SSH private key file to use for logging into Hive node")
   parser.add_option("-u", "--redshift-username",
       help="Username for Redshift ODBC connection")
   parser.add_option("-p", "--redshift-password",
@@ -69,7 +81,7 @@ def parse_args():
 
   (opts, args) = parser.parse_args()
 
-  if not (opts.impala or opts.shark or opts.redshift):
+  if not (opts.impala or opts.shark or opts.redshift or opts.hive or opts.hive_tez or opts.hive_cdh):
     parser.print_help()
     sys.exit(1)
 
@@ -262,6 +274,197 @@ def prepare_impala_dataset(opts):
     "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"")
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
+def prepare_hive_dataset(opts):
+  def ssh_hive(command, user="root"):
+    command = 'sudo -u %s %s' % (user, command)
+    ssh(opts.hive_host, "root", opts.hive_identity_file, command)
+
+  if not opts.skip_s3_import:
+    print "=== IMPORTING BENCHMARK FROM S3 ==="
+    try:
+      ssh_hive("hadoop dfs -rmr -skipTrash /tmp/benchmark", user="hdfs")
+      ssh_hive("hadoop dfs -rmr -skipTrash .Trash", user="hdfs")
+      ssh_hive("hadoop dfs -expunge", user="hdfs")
+      ssh_hive("hadoop dfs -mkdir /tmp/benchmark", user="hdfs")
+    except Exception:
+      pass # Folder may already exist
+
+    cp_rankings = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/rankings/ " \
+                  "/tmp/benchmark/rankings/" % (opts.aws_key_id,
+                                                opts.aws_key,
+                                                opts.file_format, opts.data_prefix)
+
+    cp_uservisits = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+                    "/tmp/benchmark/uservisits/" % (opts.aws_key_id,
+                                                    opts.aws_key,
+                                                    opts.file_format, opts.data_prefix)
+
+    cp_crawl = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/crawl/ " \
+               "/tmp/benchmark/crawl/" % (opts.aws_key_id,
+                                          opts.aws_key,
+                                          "text", opts.data_prefix)
+
+    ssh_hive(cp_rankings, user='hdfs')
+    ssh_hive(cp_uservisits, user='hdfs')
+    ssh_hive(cp_crawl, user='hdfs')
+
+  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  scp_to(opts.hive_host, opts.hive_identity_file, "root", "udf/url_count.py",
+      "/tmp/url_count.py")
+  for slave in opts.hive_slaves.replace('"', '').split(","):
+    scp_to(slave, opts.hive_identity_file, "root", "udf/url_count.py",
+        "/tmp/url_count.py")
+
+  mkdir = "hadoop dfs -mkdir /tmp/benchmark/scratch"
+  cp_scratch = "hadoop dfs -cp /tmp/benchmark/rankings/* /tmp/benchmark/scratch"
+  ssh_hive(mkdir, user='hdfs')
+  ssh_hive(cp_scratch, user='hdfs')
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS rankings; " \
+    "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/rankings\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS uservisits; " \
+    "CREATE EXTERNAL TABLE uservisits (sourceIP STRING, "\
+    "destURL STRING," \
+    "visitDate STRING,adRevenue DOUBLE,userAgent STRING,countryCode STRING," \
+    "languageCode STRING,searchWord STRING,duration INT ) " \
+    "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS documents; " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
+    "LOCATION \\\"/tmp/benchmark/crawl\\\";\"",
+  user="hdfs")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS scratch; " \
+    "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"",
+  user="hdfs")
+
+  print "=== FINISHED CREATING BENCHMARK DATA ==="
+
+def prepare_tez(opts):
+  old_cmd = """
+  yum install -y git;
+  git clone https://github.com/t3rmin4t0r/tez-autobuild.git;
+  cd tez-autobuild;
+  JAVA_HOME="/usr/jdk64/jdk1.6.0_31" make dist install;
+  """
+
+  cmd = """
+  yum install -y git
+  git clone https://github.com/ahirreddy/benchmark.git
+  cd benchmark/runner/tez
+
+  cp -r tez-0.2.0.2.1.0.0-92 /opt
+  HADOOP_USER_NAME=hdfs hadoop fs -mkdir -p /apps/tez
+  HADOOP_USER_NAME=hdfs hadoop fs -chmod 755 /apps/tez
+  HADOOP_USER_NAME=hdfs hadoop fs -copyFromLocal /opt/tez-0.2.0.2.1.0.0-92/* /apps/tez/
+
+  cp -r apache-hive-0.13.0.2.1.0.0-92-bin /opt
+  HADOOP_USER_NAME=hive hadoop fs -mkdir -p /user/hive
+  HADOOP_USER_NAME=hive hadoop fs -chmod 755 /user/hive
+  HADOOP_USER_NAME=hive hadoop fs -put /opt/apache-hive-0.13.0.2.1.0.0-92-bin/lib/hive-exec-*.jar /user/hive/hive-exec-0.13.0-SNAPSHOT.jar
+
+  cd Stinger-Preview-Quickstart
+  cp configs/tez-site.xml.physical /etc/hadoop/conf/tez-site.xml
+  cp /etc/hive/conf.server/hive-site.xml /opt/apache-hive-0.13.0.2.1.0.0-92-bin/conf/hive-site.xml
+
+  wget http://private-repo-1.hortonworks.com/HDP-2.1.0.0/repos/centos6/hdp.repo -O /etc/yum.repos.d/stinger.repo
+  yum upgrade hadoop-yarn-resourcemanager
+  """
+
+  print cmd
+
+  ssh(opts.hive_host, "root", opts.hive_identity_file, cmd)
+
+def prepare_hive_cdh_dataset(opts):
+  def ssh_hive(command):
+    command = 'HADOOP_USER_NAME=%s %s' % ("hdfs", command)
+    ssh(opts.hive_host, "ubuntu", opts.hive_identity_file, command)
+
+  if not opts.skip_s3_import:
+    print "=== IMPORTING BENCHMARK FROM S3 ==="
+    try:
+      ssh_hive("hadoop dfs -rmr -skipTrash /tmp/benchmark")
+      ssh_hive("hadoop dfs -rmr -skipTrash .Trash")
+      ssh_hive("hadoop dfs -expunge")
+      ssh_hive("hadoop dfs -mkdir /tmp/benchmark")
+    except Exception:
+      pass # Folder may already exist
+
+    cp_rankings = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/rankings/ " \
+                  "/tmp/benchmark/rankings/" % (opts.aws_key_id,
+                                                opts.aws_key,
+                                                opts.file_format, opts.data_prefix)
+
+    cp_uservisits = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/uservisits/ " \
+                    "/tmp/benchmark/uservisits/" % (opts.aws_key_id,
+                                                    opts.aws_key,
+                                                    opts.file_format, opts.data_prefix)
+
+    cp_crawl = "hadoop distcp s3n://%s:%s@big-data-benchmark/pavlo/%s/%s/crawl/ " \
+               "/tmp/benchmark/crawl/" % (opts.aws_key_id,
+                                          opts.aws_key,
+                                          "text", opts.data_prefix)
+
+    ssh_hive(cp_rankings)
+    ssh_hive(cp_uservisits)
+    ssh_hive(cp_crawl)
+
+  print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
+  scp_to(opts.hive_host, opts.hive_identity_file, "ubuntu", "udf/url_count.py",
+      "/tmp/url_count.py")
+  for slave in opts.hive_slaves.replace('"', '').split(","):
+    scp_to(slave, opts.hive_identity_file, "ubuntu", "udf/url_count.py",
+        "/tmp/url_count.py")
+
+  mkdir = "hadoop dfs -mkdir /tmp/benchmark/scratch"
+  cp_scratch = "hadoop dfs -cp /tmp/benchmark/rankings/* /tmp/benchmark/scratch"
+  ssh_hive(mkdir)
+  ssh_hive(cp_scratch)
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS rankings; " \
+    "CREATE EXTERNAL TABLE rankings (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/rankings\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS uservisits; " \
+    "CREATE EXTERNAL TABLE uservisits (sourceIP STRING, "\
+    "destURL STRING," \
+    "visitDate STRING,adRevenue DOUBLE,userAgent STRING,countryCode STRING," \
+    "languageCode STRING,searchWord STRING,duration INT ) " \
+    "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS documents; " \
+    "CREATE EXTERNAL TABLE documents (line STRING) STORED AS TEXTFILE " \
+    "LOCATION \\\"/tmp/benchmark/crawl\\\";\"")
+
+  ssh_hive(
+    "hive -e \"DROP TABLE IF EXISTS scratch; " \
+    "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"")
+
+  print "=== FINISHED CREATING BENCHMARK DATA ==="
+
 def prepare_redshift_dataset(opts):
   def query_and_print(cursor, query):
     cursor.execute(query)
@@ -349,6 +552,12 @@ def main():
     prepare_shark_dataset(opts)
   if opts.redshift:
     prepare_redshift_dataset(opts)
+  if opts.hive:
+    prepare_hive_dataset(opts)
+  if opts.hive_tez:
+    prepare_tez(opts)
+  if opts.hive_cdh:
+    prepare_hive_cdh_dataset(opts)
 
 if __name__ == "__main__":
   main()
