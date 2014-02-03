@@ -431,7 +431,7 @@ def run_impala_benchmark(opts):
 
   # Populate the full buffer cache if running Impala + cached
   if (not opts.impala_use_hive) and (not opts.clear_buffer_cache):
-    query = "set mem_limit=-1;" + query
+    query = "set mem_limit=68g;" + query
     query = "select count(*) from rankings;" + query
     query = "select count(*) from uservisits;" + query
 
