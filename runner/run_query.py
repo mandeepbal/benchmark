@@ -429,6 +429,9 @@ def run_impala_benchmark(opts):
   query_file.write("hive -e '%s'\n" % IMPALA_MAP[opts.query_num])
   query = QUERY_MAP[opts.query_num][1]
 
+  if opts.query_num is '3c':
+    query.replace('JOIN', 'JOIN [SHUFFLE]')
+
   # Populate the full buffer cache if running Impala + cached
   if (not opts.impala_use_hive) and (not opts.clear_buffer_cache):
     query = "set mem_limit=68g;" + query
