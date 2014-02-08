@@ -29,3 +29,11 @@ set hive.orc.splits.include.file.footer=true;
 set hive.stats.autogather=true;
 set hive.auto.convert.join.noconditionaltask.size=64000000;
 
+set hive.vectorized.groupby.maxentries=1024;
+set hive.vectorized.groupby.checkinterval=1024;
+set hive.vectorized.groupby.flush.percent=1.0;
+
+set hive.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
+
+set hive.limit.pushdown.memory.usage=0.02;
+
