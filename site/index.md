@@ -103,17 +103,18 @@ Several analytic frameworks have been announced in the last 1 year. Among them a
 
 This remains a  _**work in progress**_ and will evolve to include additional frameworks and new capabilities. We welcome <a href="#contributions">contributions</a>.
 
+### What this benchmark is not
+This benchmark is not intended to provide a comprehensive overview of the tested platforms. We are aware that by choosing default configurations we have excluded many optomizations. Instead we target a simple comparision between these systems with the goal that the results are __understandable and reproducible__.
+
 ### What is being evaluated?
 This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF\'s, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF\'s), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
 
-### What this benchmark is not
-This benchmark is not intended to provide a comprehensive overview of the tested platforms. We are aware that by choosing default configurations we have excluded many optomizations. Instead we target a simple comparision between these systems with the goal that the results are understandable and reproducible.
-
-### Changes
+### Changes and Notes
 
 * We changed the Hive configuration from Hive 0.10 on CDH4 to Hive 0.12 on HDP 2.0.6. As a result, direct comparisions between the current and previous Hive results should not be made. It is difficult to account for changes resulting from modifications to Hive as opposed to changes in the underlying Hadoop distribution.
 * Hive has improved its query optomization, which is also inherited by Shark.
-* We have changed the underlying filesystem from Ext3 to Ext4 for Hive, Impala, and Shark benchmarking.
+* We have added [Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview/) as a supported platform. __It is important to note that Tez is currently in a preview state__.
+* We have changed the underlying filesystem from Ext3 to Ext4 for Hive, Tez, Impala, and Shark benchmarking.
 
 
 
@@ -454,6 +455,15 @@ These numbers compare performance on SQL workloads, but raw performance is just 
       <td>Yes</td>
       <td>Yes</td>
       <td>Yes</td>
+      <td>Yes</td>
+  </tr>
+  <tr><td>Tez</td>
+      <td>Hive QL (HQL)</td>
+      <td>Tez</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
       <td>Yes</td>
   </tr>
   <tr>
