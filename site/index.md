@@ -22,20 +22,19 @@ layout: default
   var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], [386.6], ["untested"], ["untested"], ["untested"]];
 
   // Old Runs
-  var old_labels = [["Redshift", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"], ["Hive", "0.10 MR1"]];
+  var old_labels = [["Redshift", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"]];
   var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
   var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
   var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
   var shark_disk_old = [[11.8],[11.9],[24.9],[210],[238],[279],[253],[277],[538],[583],[133],[716]];
   var shark_mem_old = [[1.1],[1.1],[3.5],[111],[141],[156],[131],[172],[447],[156],[34],[189]];
-  var hive_10_cdh_old = [[45],[63],[70],[466],[490],[552],[423],[638],[1822],[659],[358],[1017]];
 
   function get_data(index) {
     return [[redshift[index]],[impala_disk[index]],[impala_mem[index]],[shark_disk[index]],[shark_mem[index]],[hive_12_warmup[index]],[tez[index]]];
   }
 
   function get_olddata(index) {
-    return [[redshift_old[index]],[impala_disk_old[index]],[impala_mem_old[index]],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
+    return [[redshift_old[index]],[impala_disk_old[index]],[impala_mem_old[index]],[shark_disk_old[index]],[shark_mem_old[index]]];
   }
 
   function get_q4_data(index) {
@@ -43,7 +42,7 @@ layout: default
   }
 
   function get_q4_olddata(index) {
-    return [[0],[0],[0],[shark_disk_old[index]],[shark_mem_old[index]],[hive_10_cdh_old[index]]];
+    return [[0],[0],[0],[shark_disk_old[index]],[shark_mem_old[index]]];
   }
 
   function write_table(query, a, b, c) {
@@ -78,7 +77,6 @@ layout: default
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[3][0] + " - " + labels[3][1] + "</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[4][0] + " - " + old_labels[4][1] + "</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[4][0] + " - " + labels[4][1] + "</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[5][0] + " - " + old_labels[5][1] + "</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[5][0] + " - " + labels[5][1] + "</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[6][0] + " - " + labels[6][1] + "</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
 
@@ -97,7 +95,7 @@ layout: default
 
 Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
-* [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. 
+* [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse.
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.12)
 * [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8.1)
 * [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible[\*](#discussion) SQL engine with its own MPP-like execution engine. (v1.2.3)
@@ -107,6 +105,17 @@ This remains a  _**work in progress**_ and will evolve to include additional fra
 
 ### What is being evaluated?
 This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF\'s, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF\'s), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
+
+### What this benchmark is not
+This benchmark is not intended to provide a comprehensive overview of the tested platforms. We are aware that by choosing default configurations we have excluded many optomizations. Instead we target a simple comparision between these systems with the goal that the results are understandable and reproducible.
+
+### Changes
+
+* We changed the Hive configuration from Hive 0.10 on CDH4 to Hive 0.12 on HDP 2.0.6. As a result, direct comparisions between the current and previous Hive results should not be made. It is difficult to account for changes resulting from modifications to Hive as opposed to changes in the underlying Hadoop distribution.
+* Hive has improved its query optomization, which is also inherited by Shark.
+* We have changed the underlying filesystem from Ext3 to Ext4 for Hive, Impala, and Shark benchmarking.
+
+
 
  
 <h3 id="workload">Dataset and Workload</h3>
