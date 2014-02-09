@@ -325,7 +325,7 @@ SELECT SUBSTR(sourceIP, 1, X), SUM(adRevenue) FROM uservisits GROUP BY SUBSTR(so
 
 This query applies string parsing to each input tuple then performs a high-cardinality aggregation.
 
-Redshift's columnar storage provides greater benefit than in Query 1 since several columns of the `UserVistits` table are un-used. While Shark's in-memory tables are also columnar, it is bottlenecked here on the speed at which it evaluates the `SUBSTR` expression. Since Impala is reading from the OS buffer cache, it must read and decompress entire rows. Unlike Shark, however, Impala evaluates this expression using very efficient compiled code. These two factors offset each other and Impala and Shark achieve roughly the same raw throughput for in memory tables. For larger result sets, Impala again sees high latency due to the speed of materializing output tables.
+Redshift\'s columnar storage provides greater benefit than in Query 1 since several columns of the `UserVistits` table are un-used. While Shark\'s in-memory tables are also columnar, it is bottlenecked here on the speed at which it evaluates the `SUBSTR` expression. Since Impala is reading from the OS buffer cache, it must read and decompress entire rows. Unlike Shark, however, Impala evaluates this expression using very efficient compiled code. These two factors offset each other and Impala and Shark achieve roughly the same raw throughput for in memory tables. For larger result sets, Impala again sees high latency due to the speed of materializing output tables.
 
 <!-- Important to note is that Impala and Redshift perform _streaming aggregations_, where intermediate results are not persisted to disk and all must run concurrently. Shark and Hive write intermediate results to disk before shuffling them. In both this and the following query, the all intermediate data fits within the OS buffer for Shark/Hive. -->
 
@@ -494,24 +494,24 @@ draws on that benchmark for inspiration in the dataset and workload. The most no
 1. We run on a public cloud instead of using dedicated hardware.
 1. We require the results are materialized to an output table. This is necessary because some queries in our version have results which do not fit in memory on one machine.
 1. The dataset used for Query 4 is an actual web crawl rather than a synthetic one.
-1. Query 4 uses a Python UDF instead of SQL/Java UDF's.
+1. Query 4 uses a Python UDF instead of SQL/Java UDF\'s.
 1. We create different permutations of queries 1-3. These permutations result in shorter or longer response times.  
 1. The dataset is generated using the newer [Intel](https://github.com/intel-hadoop/HiBench) generator instead of the original C scripts. The newer tools are well supported and designed to output Hadoop datasets.
 
 <h5>Did you consider comparing Vertica, Teradata, SAP Hana, MongoDB, Postgres, RAMCloud, SQLite, insert-dbms-or-query-engine-here... etc?</h5>
 
-We've started with a small number of EC2-hosted query engines because our primary goal is producing verifiable results. Over time we'd like to grow the set of frameworks. We actively welcome contributions!
+We\'ve started with a small number of EC2-hosted query engines because our primary goal is producing verifiable results. Over time we\'d like to grow the set of frameworks. We actively welcome contributions!
 
 <h5>This workload doesn't represent queries I run -- how can I test these frameworks on my own workload?</h5>
 
-We've tried to cover a set of fundamental operations in this benchmark, but of course, it may not correspond to your own workload. The prepare scripts provided with this benchmark will load sample data sets into each framework. From there, you are welcome to run your own types of queries against these tables. Because these are all easy to launch on EC2, you can also load your own datasets.
+We\'ve tried to cover a set of fundamental operations in this benchmark, but of course, it may not correspond to your own workload. The prepare scripts provided with this benchmark will load sample data sets into each framework. From there, you are welcome to run your own types of queries against these tables. Because these are all easy to launch on EC2, you can also load your own datasets.
 
 <h5>Do these queries take advantage of data-layout options, such as Hive/Impala/Shark partitions or Redshift sort columns?</h5>
 
-For now, no. The idea is to test "out of the box" performance on these queries even if you haven't done a bunch of up-front work at the loading stage to optimize for specific access patterns. We may relax this requirement in the future.
+For now, no. The idea is to test "out of the box" performance on these queries even if you haven\'t done a bunch of up-front work at the loading stage to optimize for specific access patterns. We may relax this requirement in the future.
 
 <h5>Why didn't you test Hive in memory?</h5>
-We did, but the results were very hard to stabilize. The reason is that it is hard to coerce the entire input into the buffer cache because of the way Hive uses HDFS: Each file in HDFS has three replicas and Hive's underlying scheduler may choose to launch a task at any replica on a given run. As a result, you would need 3X the amount of buffer cache (which exceeds the capacity in these clusters) and or need to have precise control over which node runs a given task (which is not offered by the MapReduce scheduler).
+We did, but the results were very hard to stabilize. The reason is that it is hard to coerce the entire input into the buffer cache because of the way Hive uses HDFS: Each file in HDFS has three replicas and Hive\'s underlying scheduler may choose to launch a task at any replica on a given run. As a result, you would need 3X the amount of buffer cache (which exceeds the capacity in these clusters) and or need to have precise control over which node runs a given task (which is not offered by the MapReduce scheduler).
 
 
 <h2 id="contributions">Contributing a New Framework</h2>
@@ -521,7 +521,7 @@ We plan to run this benchmark regularly and may introduce additional workloads o
 _Since Redshift, Shark, Hive, and Impala all provide tools to easily provision a cluster on EC2, this benchmark can be easily replicated._
 
 ### Hosted data sets
-To allow this benchmark to be easily reproduced, we've prepared various sizes of the input dataset in S3. The scale factor is defined such that each node in a cluster of the given size will hold ~25GB of the `UserVisits` table, ~1GB of the `Rankings` table, and ~30GB of the web crawl, uncompressed. The datasets are encoded in `TextFile` and `SequenceFile` format along with corresponding compressed versions. They are available publicly at `s3n://big-data-benchmark/pavlo/[text|text-deflate|sequence|sequence-snappy]/[suffix]`.
+To allow this benchmark to be easily reproduced, we\'ve prepared various sizes of the input dataset in S3. The scale factor is defined such that each node in a cluster of the given size will hold ~25GB of the `UserVisits` table, ~1GB of the `Rankings` table, and ~30GB of the web crawl, uncompressed. The datasets are encoded in `TextFile` and `SequenceFile` format along with corresponding compressed versions. They are available publicly at `s3n://big-data-benchmark/pavlo/[text|text-deflate|sequence|sequence-snappy]/[suffix]`.
 
 <table class="table table-hover">
   <tr>
