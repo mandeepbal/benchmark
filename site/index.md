@@ -506,9 +506,13 @@ We\'ve started with a small number of EC2-hosted query engines because our prima
 
 We\'ve tried to cover a set of fundamental operations in this benchmark, but of course, it may not correspond to your own workload. The prepare scripts provided with this benchmark will load sample data sets into each framework. From there, you are welcome to run your own types of queries against these tables. Because these are all easy to launch on EC2, you can also load your own datasets.
 
-<h5>Do these queries take advantage of data-layout options, such as Hive/Impala/Shark partitions or Redshift sort columns?</h5>
+<h5>Do these queries take advantage of different Hadoop file formats or data-layout options, such as Hive/Impala/Shark partitions or Redshift sort columns?</h5>
 
-For now, no. The idea is to test "out of the box" performance on these queries even if you haven\'t done a bunch of up-front work at the loading stage to optimize for specific access patterns. We may relax this requirement in the future.
+For now, no. The idea is to test \"out of the box\" performance on these queries even if you haven\'t done a bunch of up-front work at the loading stage to optimize for specific access patterns. For this reason we have opted to use simple storage formats across Hive, Impala and Shark benchmarking.
+
+That being said, it is important to note that the various platforms optomize different use cases. As it stands, only Redshift can take advantage of its columnar compression. However, the other platforms could see improved performance by utilizing a columnar storage format. Specifically, Impala is likely to benefit from the usage of the Parquet columnar file format.
+
+We may relax these requirements in the future.
 
 <h5>Why didn't you test Hive in memory?</h5>
 We did, but the results were very hard to stabilize. The reason is that it is hard to coerce the entire input into the buffer cache because of the way Hive uses HDFS: Each file in HDFS has three replicas and Hive\'s underlying scheduler may choose to launch a task at any replica on a given run. As a result, you would need 3X the amount of buffer cache (which exceeds the capacity in these clusters) and or need to have precise control over which node runs a given task (which is not offered by the MapReduce scheduler).
