@@ -461,7 +461,7 @@ These numbers compare performance on SQL workloads, but raw performance is just 
       <td>Impala</td>
       <td>Some HQL + some extensions</td>
       <td>DBMS</td>
-      <td>No</td>
+      <td>Yes (Java/C++)</td>
       <td>No</td>
       <td>Yes</td>
       <td>Yes</td>
