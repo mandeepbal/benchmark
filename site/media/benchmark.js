@@ -23,7 +23,7 @@ function make_graph(data_in, alt_data, labels, alt_labels) {
   }
 
   var h = 180;
-  var w = 250;
+  var w = 170;
   var bar_width = 17;
   var bar_spacing = 4;
   var total_bar_width = bar_width + bar_spacing;
@@ -83,7 +83,8 @@ function make_graph(data_in, alt_data, labels, alt_labels) {
     }
   }
 
-  vis.event("click", onClick)
+  // Disabled Alt Graph
+  //vis.event("click", onClick)
 
   drawChart(data_in, firstSub(labels));
 }
