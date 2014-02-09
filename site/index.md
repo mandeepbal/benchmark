@@ -18,8 +18,8 @@ layout: default
   var hive_12_warmup = [[50.49],[59.93],[43.34],[730.62],[764.95],[833.30],[561.14],[717.56],[2374.17],[1047.45], [896.47], [150.48]];
   var tez = [[28.22],[36.35],[26.44],[377.48],[438.03],[427.56],[323.06],[402.33],[1361.90],[966.18], [894.16], [62.60]];
 
-  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815], [431.26], ["not supported"], ["not supported"], ["not supported"]];
-  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], [386.6], ["not supported"], ["not supported"], ["not supported"]];
+  var impala_disk_table = [ [12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815], [431.26], ["untested"], ["untested"], ["untested"]];
+  var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], [386.6], ["untested"], ["untested"], ["untested"]];
 
   // Old Runs
   var old_labels = [["Redshift", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"], ["Hive", "0.10 MR1"]];
@@ -50,7 +50,7 @@ layout: default
     var table = $("#" + query);
     $("." + query + "candestroy").remove();
 
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\">Switch</button></td><td class=\"title-cell\" colspan=\"3\">Median Response Time (s)</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\">Old Data</button></td><td class=\"title-cell\" colspan=\"3\">Median Response Time (s)</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[2][0] + " - " + labels[2][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
@@ -67,7 +67,7 @@ layout: default
   function write_old_table(query, a, b, c) {
     var table = $("#" + query);
     $("." + query + "candestroy").remove();
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\" >Switch</button></td><td class=\"title-cell\" colspan=\"3\">Old vs Current Benchmark (s)</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\" >Current Data</button></td><td class=\"title-cell\" colspan=\"3\">Old vs Current Benchmark (s)</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[0][0] + " - " + old_labels[0][1] + "</td><td>" + redshift_old[a] + "</td><td>" + redshift_old[b] + "</td><td>" + redshift_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[1][0] + " - " + old_labels[1][1] + "</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
