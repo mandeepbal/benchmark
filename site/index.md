@@ -68,17 +68,17 @@ layout: default
     var table = $("#" + query);
     $("." + query + "candestroy").remove();
     table.append("<tr class=\"" + query + "candestroy" + "\"><td><button class=\"swap" + query + "\" >Current Data</button></td><td class=\"title-cell\" colspan=\"3\">Old vs Current Benchmark (s)</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[0][0] + " - " + old_labels[0][1] + "</td><td>" + redshift_old[a] + "</td><td>" + redshift_old[b] + "</td><td>" + redshift_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[0][0] + " - " + old_labels[0][1] + "</td><td>" + redshift_old[a] + "</td><td>" + redshift_old[b] + "</td><td>" + redshift_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[0][0] + " - " + labels[0][1] + "</td><td>" + redshift[a] + "</td><td>" + redshift[b] + "</td><td>" + redshift[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[1][0] + " - " + old_labels[1][1] + "</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[1][0] + " - " + old_labels[1][1] + "</td><td>" + impala_disk_old[a] + "</td><td>" + impala_disk_old[b] + "</td><td>" + impala_disk_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[1][0] + " - " + labels[1][1] + "</td><td>" + impala_disk_table[a] + "</td><td>" + impala_disk_table[b] + "</td><td>" + impala_disk_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[2][0] + " - " + old_labels[2][1] + "</td><td>" + impala_mem_old[a] + "</td><td>" + impala_mem_old[b] + "</td><td>" + impala_mem_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[2][0] + " - " + old_labels[2][1] + "</td><td>" + impala_mem_old[a] + "</td><td>" + impala_mem_old[b] + "</td><td>" + impala_mem_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[2][0] + " - " + labels[2][1] + "</td><td>" + impala_mem_table[a] + "</td><td>" + impala_mem_table[b] + "</td><td>" + impala_mem_table[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[3][0] + " - " + old_labels[3][1] + "</td><td>" + shark_disk_old[a] + "</td><td>" + shark_disk_old[b] + "</td><td>" + shark_disk_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[3][0] + " - " + old_labels[3][1] + "</td><td>" + shark_disk_old[a] + "</td><td>" + shark_disk_old[b] + "</td><td>" + shark_disk_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[3][0] + " - " + labels[3][1] + "</td><td>" + shark_disk[a] + "</td><td>" + shark_disk[b] + "</td><td>" + shark_disk[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[4][0] + " - " + old_labels[4][1] + "</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[4][0] + " - " + old_labels[4][1] + "</td><td>" + shark_mem_old[a] + "</td><td>" + shark_mem_old[b] + "</td><td>" + shark_mem_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[4][0] + " - " + labels[4][1] + "</td><td>" + shark_mem[a] + "</td><td>" + shark_mem[b] + "</td><td>" + shark_mem[c] + "</td></tr>")
-    table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + old_labels[5][0] + " - " + old_labels[5][1] + "</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
+    table.append("<tr class=\"" + query + "candestroy olddata" + "\"><td nowrap>" + old_labels[5][0] + " - " + old_labels[5][1] + "</td><td>" + hive_10_cdh_old[a] + "</td><td>" + hive_10_cdh_old[b] + "</td><td>" + hive_10_cdh_old[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[5][0] + " - " + labels[5][1] + "</td><td>" + hive_12_warmup[a] + "</td><td>" + hive_12_warmup[b] + "</td><td>" + hive_12_warmup[c] + "</td></tr>")
     table.append("<tr class=\"" + query + "candestroy" + "\"><td nowrap>" + labels[6][0] + " - " + labels[6][1] + "</td><td>" + tez[a] + "</td><td>" + tez[b] + "</td><td>" + tez[c] + "</td></tr>")
 
