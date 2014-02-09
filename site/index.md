@@ -93,7 +93,7 @@ layout: default
 
 <h2 id="introduction">Introduction</h2>
 
-Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of four sytems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
+Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of five systems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
 * [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse.
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.12)
@@ -104,15 +104,15 @@ Several analytic frameworks have been announced in the last 1 year. Among them a
 This remains a  _**work in progress**_ and will evolve to include additional frameworks and new capabilities. We welcome <a href="#contributions">contributions</a>.
 
 ### What this benchmark is not
-This benchmark is not intended to provide a comprehensive overview of the tested platforms. We are aware that by choosing default configurations we have excluded many optomizations. Instead we target a simple comparision between these systems with the goal that the results are __understandable and reproducible__.
+This benchmark is not intended to provide a comprehensive overview of the tested platforms. We are aware that by choosing default configurations we have excluded many optimizations. Instead we target a simple comparison between these systems with the goal that the results are __understandable and reproducible__.
 
 ### What is being evaluated?
 This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF\'s, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF\'s), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
 
 ### Changes and Notes
 
-* We changed the Hive configuration from Hive 0.10 on CDH4 to Hive 0.12 on HDP 2.0.6. As a result, direct comparisions between the current and previous Hive results should not be made. It is difficult to account for changes resulting from modifications to Hive as opposed to changes in the underlying Hadoop distribution.
-* Hive has improved its query optomization, which is also inherited by Shark.
+* We changed the Hive configuration from Hive 0.10 on CDH4 to Hive 0.12 on HDP 2.0.6. As a result, direct comparisons between the current and previous Hive results should not be made. It is difficult to account for changes resulting from modifications to Hive as opposed to changes in the underlying Hadoop distribution.
+* Hive has improved its query optimization, which is also inherited by Shark.
 * We have added [Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview/) as a supported platform. __It is important to note that Tez is currently in a preview state__.
 * We have changed the underlying filesystem from Ext3 to Ext4 for Hive, Tez, Impala, and Shark benchmarking.
 
@@ -296,7 +296,7 @@ This query scans and filters the dataset and stores the results.
 
 This query primarily tests the throughput with which each framework can read and write table data. The best performers are Impala (mem) and Shark (mem) which see excellent throughput by avoiding disk. For on-disk data, Redshift sees the best throughput for two reasons. First, the Redshift clusters have more disks and second, Redshift uses columnar compression which allows it to bypass a field which is not used in the query. Shark and Impala scan at HDFS throughput with fewer disks.
 
-Both Shark and Impala outperform Hive by 3-4X due in part to more efficient task launching and scheduling. As the result sets get larger, Impala becomes bottlenecked on the ability to persist the results back to disk. Nonetheless, since the last interation of the benchmark Impala has improved its performance in materialzing these large result-sets to disk.
+Both Shark and Impala outperform Hive by 3-4X due in part to more efficient task launching and scheduling. As the result sets get larger, Impala becomes bottlenecked on the ability to persist the results back to disk. Nonetheless, since the last iteration of the benchmark Impala has improved its performance in materializing these large result-sets to disk.
 
 Tez sees about a 40% improvement over Hive in these queries. This is in part due to the container pre-warming and reuse, which cuts down on JVM initialization time.
 
@@ -531,7 +531,7 @@ We\'ve tried to cover a set of fundamental operations in this benchmark, but of 
 
 For now, no. The idea is to test \"out of the box\" performance on these queries even if you haven\'t done a bunch of up-front work at the loading stage to optimize for specific access patterns. For this reason we have opted to use simple storage formats across Hive, Impala and Shark benchmarking.
 
-That being said, it is important to note that the various platforms optomize different use cases. As it stands, only Redshift can take advantage of its columnar compression. However, the other platforms could see improved performance by utilizing a columnar storage format. Specifically, Impala is likely to benefit from the usage of the Parquet columnar file format.
+That being said, it is important to note that the various platforms optimize different use cases. As it stands, only Redshift can take advantage of its columnar compression. However, the other platforms could see improved performance by utilizing a columnar storage format. Specifically, Impala is likely to benefit from the usage of the Parquet columnar file format.
 
 We may relax these requirements in the future.
 
