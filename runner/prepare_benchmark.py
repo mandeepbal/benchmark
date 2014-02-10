@@ -256,7 +256,7 @@ def prepare_impala_dataset(opts):
       "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
       "/tmp/benchmark/uservisits/" % (opts.file_format, opts.data_prefix))
     ssh_impala(
-      "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/scratch/ " \
+      "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/rankings/ " \
       "/tmp/benchmark/scratch/" % (opts.file_format, opts.data_prefix))
   
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
