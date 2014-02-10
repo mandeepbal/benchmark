@@ -9,7 +9,7 @@ layout: default
   // Ordering = 1a, 1b, 1c, 2a, 2b, 2c, 3a, 3b, 3c, 4, 4a, 4b
 
   // Current Runs
-  var labels = [["Redshift", "Current"], ["Impala - Disk", "1.2.3"], ["Impala - Mem", "1.2.3"], ["Shark - Disk", "0.8.1"], ["Shark - Mem", "0.8.1"], ["Hive", "0.12 YARN"], ["Tez", "0.2.0"]];
+  var labels = [["Redshift (HDD)", "Current"], ["Impala - Disk", "1.2.3"], ["Impala - Mem", "1.2.3"], ["Shark - Disk", "0.8.1"], ["Shark - Mem", "0.8.1"], ["Hive", "0.12 YARN"], ["Tez", "0.2.0"]];
   var redshift = [[2.49],[2.61],[9.46],[25.46],[56.51],[79.15],[33.29],[46.08],[168.25], ["not supported"], ["not supported"], ["not supported"]];
   var impala_disk = [[12.015],[12.015],[37.085],[113.72],[155.31],[277.53],[108.68],[129.815],[431.26]];
   impala_mem = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005],[386.6]]
@@ -22,7 +22,7 @@ layout: default
   var impala_mem_table = [[2.17],[3.01],[36.04],[84.35],[134.82],[261.015],[41.21],[76.005], [386.6], ["untested"], ["untested"], ["untested"]];
 
   // Old Runs
-  var old_labels = [["Redshift", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"]];
+  var old_labels = [["Redshift (HDD)", "Old"], ["Impala - Disk", "1.0"], ["Impala - Mem", "1.0"], ["Shark - Disk", "0.7.3"], ["Shark - Mem", "0.7.3"]];
   var redshift_old = [[2.4],[2.5],[12.2],[28],[65],[92],[42],[47],[200]]
   var impala_disk_old = [[9.9],[12],[104],[130],[216],[565],[158],[168],[345]];
   var impala_mem_old = [[0.75],[4.48],[108],[121],[208],[557],[74],[90],[337]];
@@ -95,7 +95,7 @@ layout: default
 
 Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of five systems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
-* [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse.
+* [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. We tested Redshift on HDDs.
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.12)
 * [Shark](http://shark.cs.berkeley.edu/) - a Hive-compatible SQL engine which runs on top of the [Spark](http://spark-project.org) computing framework. (v0.8.1)
 * [Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/) - a Hive-compatible[\*](#discussion) SQL engine with its own MPP-like execution engine. (v1.2.3)
