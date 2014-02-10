@@ -479,7 +479,7 @@ def run_impala_benchmark(opts):
     results = map(lambda x: float(x.split(": ")[1].split(" ")[0]), contents)
   else:
     results = map(lambda x: float(x.split("in ")[1].split("s")[0]), contents)
-    results = [1::2]
+    results = results[1::2]
 
   # Clean-up
   #ssh_impala("rm -f /tmp/%s*" % prefix) # Temporarily disabled
