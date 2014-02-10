@@ -255,6 +255,9 @@ def prepare_impala_dataset(opts):
     ssh_impala( 
       "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/uservisits/ " \
       "/tmp/benchmark/uservisits/" % (opts.file_format, opts.data_prefix))
+    ssh_impala(
+      "sudo -u hdfs hadoop distcp s3n://big-data-benchmark/pavlo/%s/%s/scratch/ " \
+      "/tmp/benchmark/scratch/" % (opts.file_format, opts.data_prefix))
   
   print "=== CREATING HIVE TABLES FOR BENCHMARK ==="
   ssh_impala(
@@ -272,6 +275,14 @@ def prepare_impala_dataset(opts):
     "languageCode STRING,searchWord STRING,duration INT ) " \
     "ROW FORMAT DELIMITED FIELDS TERMINATED BY \\\"\\001\\\" " +\
     "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/uservisits\\\";\"")
+
+  ssh_impala(
+    "hive -e \"DROP TABLE IF EXISTS scratch; " \
+    "CREATE EXTERNAL TABLE scratch (pageURL STRING, " \
+    "pageRank INT, avgDuration INT) ROW FORMAT DELIMITED FIELDS " \
+    "TERMINATED BY \\\"\\001\\\" " \
+    "STORED AS SEQUENCEFILE LOCATION \\\"/tmp/benchmark/scratch\\\";\"")
+
   print "=== FINISHED CREATING BENCHMARK DATA ==="
 
 def prepare_hive_dataset(opts):
