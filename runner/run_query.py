@@ -432,14 +432,14 @@ def run_impala_benchmark(opts):
   if '3c' in opts.query_num:
     query = query.replace('JOIN', 'JOIN [SHUFFLE]')
 
+  query = "CREATE TABLE warmup AS SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1000;" + query
+  query = "DROP TABLE IF EXISTS warmup;" + query
+
   # Populate the full buffer cache if running Impala + cached
   if (not opts.impala_use_hive) and (not opts.clear_buffer_cache):
     query = "set mem_limit=68g;" + query
     query = "select count(*) from rankings;" + query
     query = "select count(*) from uservisits;" + query
-
-  query = "CREATE TABLE warmup AS SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1000;" + query
-  query = "DROP TABLE IF EXISTS warmup;" + query
 
   connect_stmt = "connect localhost;"
   if (opts.impala_use_hive):
