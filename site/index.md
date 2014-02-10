@@ -465,7 +465,7 @@ These numbers compare performance on SQL workloads, but raw performance is just 
       <td>Yes</td>
       <td>Yes</td>
       <td>Yes</td>
-      <td>No</td>
+      <td>Yes</td>
       <td>Yes</td>
   </tr>
   <tr>
