@@ -435,8 +435,8 @@ def run_impala_benchmark(opts):
   # Populate the full buffer cache if running Impala + cached
   if (not opts.impala_use_hive) and (not opts.clear_buffer_cache):
     query = "set mem_limit=68g;" + query
-    query = "DROP TABLE IF EXISTS warmup;" + query
     query = "CREATE TABLE warmup AS SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1000;" + query
+    query = "DROP TABLE IF EXISTS warmup;" + query
     query = "select count(*) from rankings;" + query
     query = "select count(*) from uservisits;" + query
 
