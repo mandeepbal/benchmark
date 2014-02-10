@@ -432,9 +432,6 @@ def run_impala_benchmark(opts):
   if '3c' in opts.query_num:
     query = query.replace('JOIN', 'JOIN [SHUFFLE]')
 
-  for x in xrange(0, 10):
-    query = query + query
-
   # Populate the full buffer cache if running Impala + cached
   if (not opts.impala_use_hive) and (not opts.clear_buffer_cache):
     query = "set mem_limit=68g;" + query
