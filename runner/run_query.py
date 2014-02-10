@@ -433,7 +433,7 @@ def run_impala_benchmark(opts):
     query = query.replace('JOIN', 'JOIN [SHUFFLE]')
 
   query = "INSERT INTO TABLE warmup  SELECT pageURL, pageRank FROM scratch WHERE pageRank > 1000;" + query
-  query = "CREATE TABLE warmup;" + query
+  query = "CREATE TABLE warmup (pageURL STRING, pageRank INT);" + query
   query = "DROP TABLE IF EXISTS warmup;" + query
 
   # Populate the full buffer cache if running Impala + cached
