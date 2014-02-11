@@ -91,7 +91,7 @@ layout: default
   $(window).bind("load", function() { write_table("Q4", 10, 11, 9) });
 </script>
 
-__Click [Here](v1) for the previous version of the benchmark__
+***Click [Here](v1) for the previous version of the benchmark***
 
 <h2 id="introduction">Introduction</h2>
 
