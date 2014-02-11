@@ -221,7 +221,7 @@ def prepare_shark_dataset(opts):
     </configuration>
     '''.replace("NAMENODE", opts.shark_host).replace('\n', '')
 
-  ssh_shark("echo %s > ~/ephemeral-hdfs/conf/hive-site.xml" % hive_site)
+  ssh_shark('echo "%s" > ~/ephemeral-hdfs/conf/hive-site.xml' % hive_site)
 
   scp_to(opts.shark_host, opts.shark_identity_file, "root", "udf/url_count.py",
       "/root/url_count.py")
