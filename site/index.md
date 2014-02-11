@@ -93,7 +93,7 @@ layout: default
 
 <h2 id="introduction">Introduction</h2>
 
-Several analytic frameworks have been announced in the last 1 year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of five systems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
+Several analytic frameworks have been announced in the last year. Among them are inexpensive data-warehousing solutions based on traditional Massively Parallel Processor (MPP) architectures ([Redshift](http://aws.amazon.com/redshift/)), systems which impose MPP-like execution engines on top of Hadoop ([Impala](http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/), [HAWQ](http://www.greenplum.com/news/press-release/emc-introduces-worlds-most-powerful-hadoop-distribution-pivotal-hd)) and systems which optimize MapReduce to improve performance on analytical workloads ([Shark](http://shark.cs.berkeley.edu/), [Stinger/Tez](http://hortonworks.com/blog/100x-faster-hive/)). This benchmark provides [quantitative](#results) and [qualitative](#discussion) comparisons of five systems. It is entirely hosted on EC2 and can be reproduced directly from your computer.
 
 * [Redshift](http://aws.amazon.com/redshift/) - a hosted MPP database offered by Amazon.com based on the ParAccel data warehouse. We tested Redshift on HDDs.
 * [Hive](http://hive.apache.org/) - a Hadoop-based data warehousing system. (v0.12)
@@ -109,11 +109,11 @@ This benchmark is not intended to provide a comprehensive overview of the tested
 ### What is being evaluated?
 This benchmark measures response time on a handful of relational queries: scans, aggregations, joins, and UDF\'s, across different data sizes. Keep in mind that these systems have very different sets of capabilities. MapReduce-like systems (Shark/Hive) target flexible and large-scale computation, supporting complex User Defined Functions (UDF\'s), tolerating failures, and scaling to thousands of nodes. Traditional MPP databases are strictly SQL compliant and heavily optimized for relational queries. The workload here is simply one set of queries that most of these systems these can complete.
 
-### Changes and Notes
+### Changes and Notes (February 2014)
 
 * We changed the Hive configuration from Hive 0.10 on CDH4 to Hive 0.12 on HDP 2.0.6. As a result, direct comparisons between the current and previous Hive results should not be made. It is difficult to account for changes resulting from modifications to Hive as opposed to changes in the underlying Hadoop distribution.
-* Hive has improved its query optimization, which is also inherited by Shark.
 * We have added [Tez](http://hortonworks.com/blog/announcing-stinger-phase-3-technical-preview/) as a supported platform. __It is important to note that Tez is currently in a preview state__.
+* Hive has improved its query optimization, which is also inherited by Shark. This set of queries does not test the improved optimizer.
 * We have changed the underlying filesystem from Ext3 to Ext4 for Hive, Tez, Impala, and Shark benchmarking.
 
 
