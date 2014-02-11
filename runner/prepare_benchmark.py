@@ -208,18 +208,9 @@ def prepare_shark_dataset(opts):
             mv shark shark-back;
             git clone https://github.com/ahirreddy/shark.git -b branch-0.8;
             cp shark-back/conf/shark-env.sh shark/conf/shark-env.sh;
-            mkdir s;
-            cd s;
-            wget  wget https://github.com/amplab/shark/releases/download/v0.8.1/hive-0.9.0-bin.tgz;
-            tar zxf hive-0.9.0-bin.tgz;
-            mv hive-0.9.0-bin/ ~;
-            cd;
             cd shark;
             sbt/sbt assembly;
             /root/spark-ec2/copy-dir --delete /root/shark;
-            /root/spark-ec2/copy-dir /root/hive*;
-            mkdir -p /root/scala/lib;
-            cp ~/.sbt/boot/scala-2.9.3/lib/scala-library.jar /root/scala/lib/scala-library.jar;
             """)
 
   ssh_shark(
