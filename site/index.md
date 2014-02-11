@@ -592,7 +592,7 @@ To allow this benchmark to be easily reproduced, we\'ve prepared various sizes o
   * For Impala, use the [Cloudera Manager EC2 deployment instructions](http://blog.cloudera.com/blog/2013/03/how-to-create-a-cdh-cluster-on-amazon-ec2-via-cloudera-manager/). Make sure to upload your own RSA key so that you can use the same key to log into the nodes and run queries.
       * __Note:__ In order to use Ext4 as the underlying file system additional steps must be taken on each host machine. See the Ext4 section below.
   * For Shark, use [Spark/Shark EC2 launch scripts](http://spark-project.org/docs/latest/ec2-scripts.html). These are available as part of the latest Spark distribution.
-      * __Note:__ In order to use Ext4 as the underlying file system, you must make a modification to the Spark EC2 script. See the Ext4 section below.
+      * __Note:__ In order to use the same settings that were used in the benchmark, such as Ext4, you must make a modification to the Spark EC2 script. See the Ext4 section below.
   {% highlight bash %}
     $> ec2/spark-ec2 -s 5 -k [KEY PAIR NAME] -i [IDENTITY FILE] --hadoop-major-version=2 -t "m2.4xlarge" launch [CLUSTER NAME] {% endhighlight %} **NOTE:** You must set **AWS\_ACCESS\_KEY\_ID** and **AWS\_SECRET\_ACCESS\_KEY** environment variables.
 
@@ -606,7 +606,7 @@ Modify ec2/spark_ec2.py:
 
 {% highlight bash %}
 Change: ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/mesos/spark-ec2.git -b v2")
-To:     ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/ahirreddy/spark-ec2.git -b ext4")
+To:     ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/ahirreddy/spark-ec2.git -b ext4-update")
 {% endhighlight %}
 
 ##### Impala
