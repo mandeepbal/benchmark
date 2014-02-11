@@ -203,7 +203,23 @@ def prepare_shark_dataset(opts):
   scp_to(opts.shark_host, opts.shark_identity_file, "root", "udf/url_count.py",
       "/root/url_count.py")
   ssh_shark("/root/spark-ec2/copy-dir /root/url_count.py")
-  
+
+  ssh_shark("""
+            mv shark shark-back;
+            git clone https://github.com/ahirreddy/shark.git -b branch-0.8;
+            cp shark-back/conf/shark-env.sh shark/conf/shark-env.sh;
+            mkdir s;
+            cd s;
+            wget  wget https://github.com/amplab/shark/releases/download/v0.8.1/hive-0.9.0-bin.tgz;
+            tar zxf hive-0.9.0-bin.tgz;
+            mv hive-0.9.0-bin/ ~;
+            cd;
+            cd shark;
+            sbt/sbt assembly;
+            /root/spark-ec2/copy-dir --delete /root/shark;
+            /root/spark-ec2/copy-dir /root/hive*;
+            """)
+
   ssh_shark(
     "/root/shark/bin/shark -e \"DROP TABLE IF EXISTS rankings; " \
     "CREATE EXTERNAL TABLE rankings (pageURL STRING, pageRank INT, " \
