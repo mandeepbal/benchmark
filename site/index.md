@@ -588,27 +588,44 @@ To allow this benchmark to be easily reproduced, we\'ve prepared various sizes o
   * Each cluster should be created in the US East EC2 Region
   * For Redshift, use the [Amazon AWS console](https://console.aws.amazon.com/redshift/). Make sure to whitelist the node you plan to run the benchmark from in the Redshift control panel.
   * For Impala, use the [Cloudera Manager EC2 deployment instructions](http://blog.cloudera.com/blog/2013/03/how-to-create-a-cdh-cluster-on-amazon-ec2-via-cloudera-manager/). Make sure to upload your own RSA key so that you can use the same key to log into the nodes and run queries.
-      * __Note:__ In order to use Ext4 as the underlying file system additional steps must be taken on each host machine. See below for instructions.
-  * For Shark, use the Ext4 branch of the [Spark/Shark EC2 launch scripts](http://spark-project.org/docs/latest/ec2-scripts.html). These are available as part of the latest Spark distribution.
+      * __Note:__ In order to use Ext4 as the underlying file system additional steps must be taken on each host machine. See the Ext4 section below.
+  * For Shark, use [Spark/Shark EC2 launch scripts](http://spark-project.org/docs/latest/ec2-scripts.html). These are available as part of the latest Spark distribution.
+      * __Note:__ In order to use Ext4 as the underlying file system, you must make a modification to the Spark EC2 script. See the Ext4 section below.
   {% highlight bash %}
     $> ec2/spark-ec2 -s 5 -k [KEY PAIR NAME] -i [IDENTITY FILE] --hadoop-major-version=2 -t "m2.4xlarge" launch [CLUSTER NAME] {% endhighlight %} **NOTE:** You must set **AWS\_ACCESS\_KEY\_ID** and **AWS\_SECRET\_ACCESS\_KEY** environment variables.
 
   * For Hive and Tez, use the following instructions to launch a cluster
 
-#### Using Ext4 and Impala
-    Run the following commands on each node provisioned by the Cloudera Manager. These commands must be issued after an instance is provisioned but before services are installed.
-    {% highlight bash %}
-      dev=/dev/xvdb
-      sudo umount $dev
-      sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 $dev
-      sudo mount -o defaults,noatime,nodiratime $dev
+#### Using Ext4
 
-      dev=/dev/xvdc
-      sudo mkdir /data0
-      sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 $dev
-      sudo mount -o defaults,noatime,nodiratime $dev
-      sudo mount -t ext4 -o defaults,noatime,nodiratime $dev /data0
-  {% endhighlight %}
+##### Shark
+
+Modify ec2/spark_ec2.py:
+
+{% highlight bash %}
+Change: ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/mesos/spark-ec2.git -b v2")
+To:     ssh(master, opts, "rm -rf spark-ec2 && git clone https://github.com/ahirreddy/spark-ec2.git -b ext4")
+{% endhighlight %}
+
+##### Impala
+
+Run the following commands on each node provisioned by the Cloudera Manager. These commands must be issued after an instance is provisioned but before services are installed.
+{% highlight bash %}
+  dev=/dev/xvdb
+  sudo umount $dev
+  sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 $dev
+  sudo mount -o defaults,noatime,nodiratime $dev
+
+  dev=/dev/xvdc
+  sudo mkdir /data0
+  sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 $dev
+  sudo mount -o defaults,noatime,nodiratime $dev
+  sudo mount -t ext4 -o defaults,noatime,nodiratime $dev /data0
+{% endhighlight %}
+
+##### Hive/Tez
+
+By default our HDP launch scripts will format the underlying filesystem as Ext4, no additional steps are required.
 
 #### Launching Hive and Tez Clusters
 This command will launch and configure the specified number of slaves in addition to a Master and an Ambari host.
