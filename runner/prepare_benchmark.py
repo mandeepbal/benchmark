@@ -218,6 +218,8 @@ def prepare_shark_dataset(opts):
             sbt/sbt assembly;
             /root/spark-ec2/copy-dir --delete /root/shark;
             /root/spark-ec2/copy-dir /root/hive*;
+            mkdir -p /root/scala/lib;
+            cp ~/.sbt/boot/scala-2.9.3/lib/scala-library.jar /root/scala/lib/scala-library.jar;
             """)
 
   ssh_shark(
